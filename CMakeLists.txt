@@ -44,6 +44,9 @@ endif()
 # Probe std::expected availability
 include(cmake/CheckExpected.cmake)
 
+# Kbuild Integration
+include(cmake/KbuildModule.cmake)
+
 # Includes
 include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/mock_kernel ${CMAKE_SOURCE_DIR}/third_party)
 
@@ -86,3 +89,9 @@ add_negative_link_test(test_no_raw_new ${CMAKE_SOURCE_DIR}/tests/test_negative_n
 
 add_test(NAME test_nodiscard_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_nodiscard)
 add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_no_raw_new)
+
+# Real KO generation via Kbuild
+if(NOT BUILD_MODE STREQUAL "host")
+    add_kbuild_module(cpp_lkm kernel_module)
+endif()
+
