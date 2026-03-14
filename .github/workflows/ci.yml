@@ -14,10 +14,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake clang-format g++
+          sudo apt-get install -y cmake clang-format clang-tidy g++
 
       - name: Configure (host)
-        run: cmake -B build -DBUILD_MODE=host -DBUILD_KO=OFF
+        run: cmake -B build -DBUILD_MODE=host -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
         run: cmake --build build -j
@@ -25,5 +25,21 @@ jobs:
       - name: Test
         run: ctest --test-dir build -V
 
-      - name: Format check
+      - name: C++ format check
         run: cmake --build build --target format-check
+
+      - name: C++ lint
+        run: |
+          files=$(git ls-files 'src/*.cpp' 'include/*.h' 'tests/*.cpp' 'tests/*.h' 'compat/*.h' || true)
+          if [ -n "$files" ]; then clang-tidy -p build $files; fi
+
+      - name: CMake format check
+        run: |
+          pip install 'cmakelang[YAML]'
+          bash scripts/cmake-format-check.sh
+
+      - name: CMake lint
+        run: bash scripts/cmake-lint.sh
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2 "docs/**/*.md" "README.md"

@@ -1,0 +1,51 @@
+# Pre-commit: read-only checks only (no file modifications).
+# Run: pre-commit run --all-files
+# Install: pre-commit install
+#
+# Requires: just, clang-format, clang-tidy, cmake-format, cmake-lint, markdownlint-cli2
+# (cmakelang: pip install 'cmakelang[YAML]'; markdownlint: npm i -g markdownlint-cli2)
+
+repos:
+  # C++ format check (no modify)
+  - repo: local
+    hooks:
+      - id: cpp-format-check
+        name: C++ format (check)
+        entry: just qa-format-cpp
+        language: system
+        pass_filenames: false
+
+  # C++ lint
+  - repo: local
+    hooks:
+      - id: cpp-lint
+        name: C++ lint (clang-tidy)
+        entry: just qa-lint-cpp
+        language: system
+        pass_filenames: false
+
+  # CMake format check (no modify)
+  - repo: local
+    hooks:
+      - id: cmake-format-check
+        name: CMake format (check)
+        entry: scripts/cmake-format-check.sh
+        language: system
+        pass_filenames: false
+
+  # CMake lint
+  - repo: local
+    hooks:
+      - id: cmake-lint
+        name: CMake lint
+        entry: scripts/cmake-lint.sh
+        language: system
+        pass_filenames: false
+
+  # Markdown lint (docs + root .md)
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.21.0
+    hooks:
+      - id: markdownlint-cli2
+        name: Markdown lint
+        files: ^(docs/|README\.md|\.agents/.*\.md)$

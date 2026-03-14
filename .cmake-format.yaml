@@ -1,0 +1,17 @@
+# cmakelang: format + lint. Strict: enable all lint, disable only irrelevant.
+# https://cmake-format.readthedocs.io/
+
+# Preserve casing so CMake keywords (VERSION, LANGUAGES, CACHE, INTERFACE, etc.) stay valid.
+format:
+  line_width: 100
+  tab_size: 4
+  command_case: unchanged
+  keyword_case: unchanged
+  enable_sort: true
+  dangle_parens: true
+
+lint:
+  # Disable convention checks that conflict with common CMake style (UPPER_CASE, line length, COMMENT/docstring).
+  disabled_codes: [C0103, C0111, C0113, C0301]
+  min_statement_spacing: 1
+  max_statement_spacing: 2

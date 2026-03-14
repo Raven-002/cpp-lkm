@@ -1,5 +1,5 @@
-separate_arguments(CXX_FLAGS_LIST UNIX_COMMAND ${CXX_FLAGS})
-separate_arguments(LINK_FLAGS_LIST UNIX_COMMAND ${LINK_FLAGS})
+separate_arguments(CXX_FLAGS_LIST unix_command ${CXX_FLAGS})
+separate_arguments(LINK_FLAGS_LIST unix_command ${LINK_FLAGS})
 execute_process(
     COMMAND ${COMPILER} ${CXX_FLAGS_LIST} ${SOURCE} ${OBJ_TO_LINK} ${LINK_FLAGS_LIST} -o /dev/null
     RESULT_VARIABLE RES
@@ -7,7 +7,10 @@ execute_process(
     ERROR_VARIABLE ERR
 )
 if(RES EQUAL 0)
-    message(FATAL_ERROR "Negative link test failed (it linked successfully but was expected to fail):\n${OUT}\n${ERR}")
+    message(
+        FATAL_ERROR
+            "Negative link test failed (it linked successfully but was expected to fail):\n${OUT}\n${ERR}"
+    )
 else()
     message(STATUS "Negative link test passed (it failed to link as expected)")
 endif()

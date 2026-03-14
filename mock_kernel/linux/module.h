@@ -1,11 +1,12 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-extern int  cpp_module_init(void);
-extern void cpp_module_exit(void);
+    extern int cpp_module_init(void);
+    extern void cpp_module_exit(void);
 
 #define module_init(fn)
 #define module_exit(fn)

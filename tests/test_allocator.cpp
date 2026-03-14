@@ -1,16 +1,19 @@
 #include "kalloc.h"
+#include "mock_globals.h"
+
+#include <assert.h>
 #include <linux/kernel.h>
 #include <linux/preempt.h>
 #include <stdio.h>
-#include <assert.h>
-#include "mock_globals.h"
 
-struct TestObj {
+struct TestObj
+{
     int x;
     TestObj(int val) : x(val) {}
 };
 
-void test_kalloc_success() {
+void test_kalloc_success()
+{
     __mock_preempt_count = 0;
     __mock_irqs_disabled = 0;
     __mock_in_nmi = 0;
@@ -25,7 +28,8 @@ void test_kalloc_success() {
     kfree_obj(*p);
 }
 
-void test_kalloc_atomic() {
+void test_kalloc_atomic()
+{
     __mock_preempt_count = 1;
     __mock_kmalloc_fail_after = 0;
 
@@ -37,7 +41,8 @@ void test_kalloc_atomic() {
     __mock_preempt_count = 0;
 }
 
-void test_kalloc_fail() {
+void test_kalloc_fail()
+{
     __mock_kmalloc_fail = 1;
     __mock_kmalloc_fail_after = 0;
     auto p = kalloc<TestObj>(99);
@@ -45,26 +50,30 @@ void test_kalloc_fail() {
     assert(p.error() == ErrorCode::AllocFail);
 }
 
-void test_kalloc_array_success() {
+void test_kalloc_array_success()
+{
     __mock_kmalloc_fail = 0;
     __mock_preempt_count = 0;
     __mock_kmalloc_fail_after = 0;
-    
+
     auto arr = kalloc_array<int>(10);
     assert(arr.has_value());
-    
+
     int* p = *arr;
-    for (int i=0; i<10; ++i) p[i] = i;
+    for (int i = 0; i < 10; ++i)
+        p[i] = i;
 
     kfree(p); // kfree_obj isn't for arrays typically, but kalloc_array returns T*
 }
 
-void test_kfree_obj_null() {
+void test_kfree_obj_null()
+{
     TestObj* p = nullptr;
     kfree_obj(p); // Should not crash
 }
 
-int main() {
+int main()
+{
     test_kalloc_success();
     test_kalloc_atomic();
     test_kalloc_fail();

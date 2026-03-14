@@ -4,8 +4,8 @@
 #   just --list
 #   just build
 #   just test
-#   just format
-#   just lint
+#   just qa          # all format + lint checks
+#   just qa-fix-*    # auto-fix for each qa target
 #   just smoke
 
 set dotenv-load := false
@@ -40,23 +40,60 @@ build: configure
 test: build
   ctest --test-dir "{{BUILD_DIR}}" -V
 
-format: configure
-  cmake --build "{{BUILD_DIR}}" --target format
+# --- QA: format checks (read-only) ---
+qa-format: qa-format-cpp qa-format-cmake
 
-format-check: configure
+qa-format-cpp: configure
   cmake --build "{{BUILD_DIR}}" --target format-check
 
-# Best-effort clang-tidy pass (not a hard gate); prints a hint if missing.
-lint:
-  if ! command -v clang-tidy >/dev/null 2>&1; then \
-    echo "clang-tidy not found. Install it (e.g. clang-tools-extra) to run lint."; \
-    exit 2; \
-  fi
-  if ! command -v compile_commands.json >/dev/null 2>&1; then :; fi
-  cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-  files="$(git ls-files 'src/*.cpp' 'include/*.h' 'tests/*.cpp' 'tests/*.h' 'compat/*.h' || true)"
-  if [[ -z "$files" ]]; then echo "No files found to lint."; exit 0; fi
+qa-format-cmake:
+  scripts/cmake-format-check.sh
+
+# --- QA: lint checks ---
+qa-lint: qa-lint-cpp qa-lint-markdown
+  - just qa-lint-cmake
+
+qa-lint-cpp:
+  if ! command -v clang-tidy >/dev/null 2>&1; then echo "clang-tidy not found. Install it (e.g. clang-tools-extra) to run lint."; exit 2; fi && \
+  cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && \
+  files="$(git ls-files 'src/*.cpp' 'include/*.h' 'tests/*.cpp' 'tests/*.h' 'compat/*.h' | grep -v 'tests/test_nodiscard\.cpp' || true)" && \
+  if [[ -z "$files" ]]; then echo "No files found to lint."; exit 0; fi && \
   clang-tidy -p "{{BUILD_DIR}}" $files
+
+qa-lint-markdown:
+  (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 "docs/**/*.md" "README.md"
+
+# CMake lint (optional; skip if cmake-lint not installed)
+qa-lint-cmake:
+  scripts/cmake-lint.sh
+
+# --- QA: run all checks ---
+qa: qa-format qa-lint
+
+# --- QA fix: auto-fix (apply formatters / fixers) ---
+qa-fix: qa-fix-format qa-fix-lint
+
+qa-fix-format: qa-fix-format-cpp qa-fix-format-cmake
+
+qa-fix-format-cpp: configure
+  cmake --build "{{BUILD_DIR}}" --target format
+
+qa-fix-format-cmake:
+  scripts/cmake-format-fix.sh
+
+qa-fix-lint: qa-fix-lint-cpp
+  - just qa-fix-lint-markdown
+  - just qa-fix-lint-cmake
+
+# C++ lint "fix" = format (clang-tidy has limited fixes)
+qa-fix-lint-cpp: qa-fix-format-cpp
+
+qa-fix-lint-markdown:
+  (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 --fix "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 --fix "docs/**/*.md" "README.md"
+
+# CMake lint fix = cmake-format -i
+qa-fix-lint-cmake:
+  scripts/cmake-format-fix.sh
 
 # --- Kernel smoke testing ---
 #

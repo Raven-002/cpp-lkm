@@ -1,4 +1,5 @@
 # Requirements: Smart Modern C++ Kernel Module (Mocked)
+
 ## Revision 4 — Panic-Free Allocation & Typed Allocator Pattern
 
 ## 1. Project Overview
@@ -47,6 +48,7 @@ implementing anything else.
 ### 2.1 The Problem with `operator new` in Kernel Context
 
 Standard `operator new` has two behaviors under `-fno-exceptions`:
+
 - It either returns a valid pointer, or
 - It calls `std::terminate()` / invokes undefined behavior on null return.
 

@@ -1,5 +1,5 @@
-#include <stddef.h>
 #include <linux/slab.h>
+#include <stddef.h>
 
 // Heap-form operator new is intentionally NOT defined.
 // If you are seeing a linker error referencing operator new(size_t),
@@ -8,10 +8,12 @@
 // Placement new (operator new(size_t, void*)) is defined in compat/new_shim.h
 // and is the only permitted form of new in this codebase.
 
-void operator delete(void* p) noexcept {
+void operator delete(void* p) noexcept
+{
     kfree(p);
 }
 
-void operator delete(void* p, size_t) noexcept {
+void operator delete(void* p, size_t) noexcept
+{
     kfree(p);
 }
