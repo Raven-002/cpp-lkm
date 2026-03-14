@@ -3,10 +3,3 @@
 default: true
 MD007:
   indent: 4
-# Line length: warn only (strict: false), allow longer lines in docs
-MD013:
-  line_length: 280
-  strict: false
-# Table/fenced-code style: disabled to avoid mass doc reformatting
-MD040: false
-MD060: false

@@ -4,46 +4,51 @@
 
 ## 1. Project Overview
 
-A C++23 kernel module framework targeting a freestanding environment. It uses functional error
-handling via `std::expected`, avoids the C++ runtime (no exceptions/RTTI), and implements a
-context-aware memory allocator that selects the correct `kmalloc` GFP flags based on CPU execution
-context.
+A C++23 kernel module framework targeting a freestanding environment. It uses
+functional error handling via `std::expected`, avoids the C++ runtime (no
+exceptions/RTTI), and implements a context-aware memory allocator that selects
+the correct `kmalloc` GFP flags based on CPU execution context.
 
-**Core design invariant:** No code path inside the module may trigger a kernel panic (`BUG()`,
-`BUG_ON()`, `panic()`, or equivalent). All runtime failures — including allocation failures —
-must be returned as `ErrorCode` values and handled by the caller. The module must always be able
-to clean up after itself and exit gracefully.
+**Core design invariant:** No code path inside the module may trigger a kernel
+panic (`BUG()`, `BUG_ON()`, `panic()`, or equivalent). All runtime failures —
+including allocation failures — must be returned as `ErrorCode` values and
+handled by the caller. The module must always be able to clean up after itself
+and exit gracefully.
 
 ### 1.1 Compiler Support Matrix
 
-The same C++ source must compile and pass tests under all three configurations without modification:
+The same C++ source must compile and pass tests under all three configurations
+without modification:
 
 | Mode | Compiler | Purpose |
-|---|---|---|
-| **Host / Dev** | Clang 16+ or GCC 13+ (host arch) | Fast iteration, mocked unit tests |
-| **Platform / Native** | G++12 (latest 12.x, target arch) | Final platform build and validation |
-| **Platform / CI Test** | G++12 (latest 12.x, target arch) | Mandatory test gate before any platform release |
+| --- | --- | --- |
+| **Host / Dev** | Clang 16+ or GCC 13+ (host) | Fast iteration, unit tests |
+| **Platform / Native** | G++12 (12.x, target arch) | Platform build |
+| **Platform / CI Test** | G++12 (12.x, target arch) | CI gate before release |
 
-> **Architecture note:** The target platform architecture is opaque to this spec. The build system
-> must not hardcode any arch-specific flags. Any arch-specific flags must be injected externally
-> via `CMAKE_CXX_FLAGS` or a toolchain file provided by the platform owner.
+> **Architecture note:** The target platform architecture is opaque to this spec.
+> The build system must not hardcode any arch-specific flags. Any arch-specific
+> flags must be injected externally via `CMAKE_CXX_FLAGS` or a toolchain file
+> provided by the platform owner.
 
 ### 1.2 Compatibility Philosophy
 
-The project uses **idiomatic C++23 source throughout**, with a thin `compat/` header façade that
-transparently provides missing stdlib types via header-only backports when building under G++12.
+The project uses **idiomatic C++23 source throughout**, with a thin `compat/`
+header façade that transparently provides missing stdlib types via header-only
+backports when building under G++12.
 
 **No source-level transpilation. No `#ifdef` noise in business logic.**
 
-All compatibility decisions are made once, in `compat/`, and are invisible to the rest of the
-codebase. When the toolchain improves, updating `compat/` is the only change required.
+All compatibility decisions are made once, in `compat/`, and are invisible to
+the rest of the codebase. When the toolchain improves, updating `compat/` is
+the only change required.
 
 ---
 
 ## 2. Memory Allocation Architecture
 
-This section is the most critical architectural change in Rev 4. Read it carefully before
-implementing anything else.
+This section is the most critical architectural change in Rev 4. Read it
+carefully before implementing anything else.
 
 ### 2.1 The Problem with `operator new` in Kernel Context
 
@@ -52,18 +57,19 @@ Standard `operator new` has two behaviors under `-fno-exceptions`:
 - It either returns a valid pointer, or
 - It calls `std::terminate()` / invokes undefined behavior on null return.
 
-Neither is acceptable here. Returning nullptr silently leads to null-dereferences; calling
-terminate is a kernel panic. The throwing form is unavailable. There is no safe way to use
-heap-form `operator new` in a `-fno-exceptions` kernel module if you want graceful error
-recovery.
+Neither is acceptable here. Returning nullptr silently leads to
+null-dereferences; calling terminate is a kernel panic. The throwing form is
+unavailable. There is no safe way to use heap-form `operator new` in a
+`-fno-exceptions` kernel module if you want graceful error recovery.
 
 **Resolution: ban heap-form `operator new` entirely.**
 
 ### 2.2 `operator new` as a Linker Trap
 
-The global heap-form `operator new` must be **declared but not defined**. Any TU that
-accidentally calls `new Foo{}` will fail to link with an undefined reference error, catching
-the mistake at build time rather than causing a panic at runtime.
+The global heap-form `operator new` must be **declared but not defined**. Any TU
+that accidentally calls `new Foo{}` will fail to link with an undefined
+reference error, catching the mistake at build time rather than causing a panic
+at runtime.
 
 ```cpp
 // operator_new.cpp
@@ -77,17 +83,19 @@ void operator delete(void* p) noexcept;   // defined — wraps kfree
 void operator delete(void* p, size_t) noexcept; // sized delete — same
 ```
 
-> Do not provide a `operator new(size_t, std::nothrow_t)` nothrow overload either. It would
-> bypass the linker trap and return a raw pointer that callers might forget to check.
+> Do not provide a `operator new(size_t, std::nothrow_t)` nothrow overload
+> either. It would bypass the linker trap and return a raw pointer that callers
+> might forget to check.
 
-The linker trap approach produces a clear, actionable error message pointing exactly to the
-offending call site. It is strictly better than a runtime check.
+The linker trap approach produces a clear, actionable error message pointing
+exactly to the offending call site. It is strictly better than a runtime check.
 
 ### 2.3 The `kalloc<T>()` Helper
 
-All dynamic allocation in business logic must go through `kalloc<T>()`. It handles GFP flag
-selection, null checking, and object construction, and returns a typed `std::expected` so
-failures propagate naturally through the `std::expected` chain.
+All dynamic allocation in business logic must go through `kalloc<T>()`. It
+handles GFP flag selection, null checking, and object construction, and returns
+a typed `std::expected` so failures propagate naturally through the
+`std::expected` chain.
 
 ```cpp
 // include/kalloc.h
@@ -113,7 +121,7 @@ template<typename T, typename... Args>
     void* mem = kmalloc(sizeof(T), current_gfp_flags());
     if (!mem) [[unlikely]]
         return std::unexpected(ErrorCode::AllocFail);
-    return new (mem) T{static_cast<Args&&>(args)...};  // placement new — cannot fail
+    return new (mem) T{static_cast<Args&&>(args)...};  // placement new only
 }
 
 // Destroy and free a pointer previously returned by kalloc<T>().
@@ -159,27 +167,30 @@ template<typename T>
 
 ### 2.5 Placement New for the Global Instance
 
-The global `CppKernelModule` instance is constructed via placement new into a static buffer.
-This is the **only** placement new call that happens outside of `kalloc()`. It is permitted
-because the static buffer is always valid and construction of the module object itself must
-not fail (construction is Phase 1 — trivial by design).
+The global `CppKernelModule` instance is constructed via placement new into a
+static buffer. This is the **only** placement new call that happens outside of
+`kalloc()`. It is permitted because the static buffer is always valid and
+construction of the module object itself must not fail (Phase 1 — trivial by
+design).
 
 ```cpp
 alignas(CppKernelModule) static unsigned char g_module_buf[sizeof(CppKernelModule)];
 static CppKernelModule* g_module = nullptr;
 
 // In cpp_module_init:
-g_module = new (g_module_buf) CppKernelModule{};  // placement new — valid, cannot fail
+g_module = new (g_module_buf) CppKernelModule{};  // placement new, cannot fail
 ```
 
 ### 2.6 `BUG()` and `BUG_ON()` — Explicitly Forbidden
 
-`BUG()`, `BUG_ON()`, `WARN_ON()` with side effects, `panic()`, and any equivalent that halts
-or panics the kernel must **never** be called by module code.
+`BUG()`, `BUG_ON()`, `WARN_ON()` with side effects, `panic()`, and any
+equivalent that halts or panics the kernel must **never** be called by module
+code.
 
-The mock `linux/kernel.h` must still define `BUG()` (to `abort()`) so that any accidental use
-is visible and loud in testing. But the CI test suite must include a static analysis or grep
-gate that fails if any call to `BUG` or `BUG_ON` appears in `src/` or `include/`.
+The mock `linux/kernel.h` must still define `BUG()` (to `abort()`) so that any
+accidental use is visible and loud in testing. The CI test suite must include a
+static analysis or grep gate that fails if any call to `BUG` or `BUG_ON`
+appears in `src/` or `include/`.
 
 ```cmake
 # CMakeLists.txt — BUG() usage gate
@@ -198,10 +209,11 @@ add_dependencies(kernel_module check_no_bug)
 
 ### 3.1 Two-Phase Initialization
 
-- **Phase 1 — Construction**: Trivially safe. No allocations whatsoever. No `kalloc()`. No
+- **Phase 1 — Construction**: Trivially safe. No allocations. No `kalloc()`. No
   `kmalloc()`. No hardware access. Prints `[CPP] Constructed`.
-- **Phase 2 — Initialization**: Fallible. Returns `std::expected<void, ErrorCode>`. May call
-  `kalloc()`. Any failure must be returned — never swallowed, never panicked.
+- **Phase 2 — Initialization**: Fallible. Returns
+  `std::expected<void, ErrorCode>`. May call `kalloc()`. Any failure must be
+  returned — never swallowed, never panicked.
 
 ### 3.2 The `CppKernelModule` Class
 
@@ -211,9 +223,9 @@ add_dependencies(kernel_module check_no_bug)
 
 class CppKernelModule {
 public:
-    CppKernelModule();                                    // Phase 1: trivial, no alloc
+    CppKernelModule();                    // Phase 1: trivial, no alloc
     [[nodiscard]] std::expected<void, ErrorCode> init();  // Phase 2: fallible
-    ~CppKernelModule();                                   // Explicit teardown, frees resources
+    ~CppKernelModule();                   // Teardown, frees resources
 private:
     bool _initialized = false;
     // Any resources allocated in init() must be tracked here
@@ -221,18 +233,18 @@ private:
 };
 ```
 
-**`was_successful()` is removed.** The `std::expected` return from `init()` is the
-authoritative signal. A separate boolean check is redundant and creates a two-source-of-truth
-problem: if `init()` returns a value but `was_successful()` returns false (or vice versa due to
-a bug), the module is in an undefined state. Callers must check the `expected` return and act on
-it immediately.
+**`was_successful()` is removed.** The `std::expected` return from `init()` is
+the authoritative signal. A separate boolean check is redundant and creates a
+two-source-of-truth problem: if `init()` returns a value but `was_successful()`
+returns false (or vice versa due to a bug), the module is in an undefined
+state. Callers must check the `expected` return and act on it immediately.
 
 ### 3.3 Destructor Invariant
 
-The destructor must be safe to call **at any point after construction**, including after a
-partial `init()` that failed midway. Resources must be tracked with clear initialized/null
-state so the destructor can free whatever was successfully allocated without double-freeing or
-dereferencing null.
+The destructor must be safe to call **at any point after construction**,
+including after a partial `init()` that failed midway. Resources must be
+tracked with clear initialized/null state so the destructor can free whatever
+was successfully allocated without double-freeing or dereferencing null.
 
 ```cpp
 // Pattern: null-initialized pointers, unconditional free in destructor
@@ -248,8 +260,9 @@ public:
 };
 ```
 
-This means `module_exit` can call the destructor unconditionally — even if `init()` failed
-partway through — and the module will clean up whatever it allocated.
+This means `module_exit` can call the destructor unconditionally — even if
+`init()` failed partway through — and the module will clean up whatever it
+allocated.
 
 ### 3.4 `ErrorCode` Enum
 
@@ -262,8 +275,9 @@ enum class ErrorCode : int {
 };
 ```
 
-Values are inlined to avoid depending on `<errno.h>` macros before mock headers are included.
-`static_cast<int>(err)` must be a valid `module_init` return for all non-`None` values.
+Values are inlined to avoid depending on `<errno.h>` macros before mock
+headers are included. `static_cast<int>(err)` must be a valid `module_init`
+return for all non-`None` values.
 
 ---
 
@@ -271,32 +285,33 @@ Values are inlined to avoid depending on `<errno.h>` macros before mock headers 
 
 ### 4.1 `[[nodiscard]]` Policy
 
-Every function returning `std::expected<T,E>` or `ErrorCode` must be `[[nodiscard]]`.
-`-Werror=unused-result` must be enabled across all compilers in all modes. Discarding an
-`expected` return is a compile error, not a runtime risk.
+Every function returning `std::expected<T,E>` or `ErrorCode` must be
+`[[nodiscard]]`. `-Werror=unused-result` must be enabled across all compilers
+in all modes. Discarding an `expected` return is a compile error, not a
+runtime risk.
 
 ### 4.2 Forbidden Constructs
 
 | Forbidden | Reason |
-|---|---|
+| --- | --- |
 | `new T{}` (heap form) | Linker trap — use `kalloc<T>()` instead |
-| `new (std::nothrow) T{}` | Bypasses linker trap, returns unchecked raw pointer |
+| `new (std::nothrow) T{}` | Bypasses trap; returns unchecked raw pointer |
 | `delete p` | Use `kfree_obj(p)` instead |
-| `BUG()`, `BUG_ON()`, `panic()` | Must never panic the kernel — propagate `ErrorCode` |
-| `std::vector`, `std::string`, `std::map` | Heap-heavy, use runtime allocator internally |
+| `BUG()`, `BUG_ON()`, `panic()` | Never panic — propagate `ErrorCode` |
+| `std::vector`, `std::string`, `std::map` | Heap-heavy; use runtime allocator |
 | Exceptions | `-fno-exceptions` across all modes |
 | RTTI, `dynamic_cast`, `typeid` | `-fno-rtti` across all modes |
-| Global constructors with observable side effects | `module_init` controls init order |
-| Floating point | No FPU without explicit `kernel_fpu_begin()`/`end()` guards |
+| Global ctors with side effects | `module_init` controls init order |
+| Floating point | No FPU without kernel_fpu_begin/end guards |
 | `thread_local` | No conventional TLS in kernel context |
-| `#ifdef` in `src/` or `include/` for compiler/stdlib version | Belongs in `compat/` only |
-| Silently ignoring `std::expected` error returns | `[[nodiscard]]` + `-Werror` enforces this |
+| `#ifdef` in src/include for compiler | Belongs in `compat/` only |
+| Ignoring `std::expected` returns | `[[nodiscard]]` + `-Werror` enforces |
 
 ### 4.3 G++12-Specific Warnings
 
-```
+```text
 -Wall -Wextra -Werror
--Wno-interference-size        # GCC 12 spurious warning — document and remove at GCC 13
+-Wno-interference-size   # GCC 12 spurious; remove at GCC 13
 -Werror=unused-result
 -Werror=return-type
 ```
@@ -305,8 +320,8 @@ Every function returning `std::expected<T,E>` or `ErrorCode` must be `[[nodiscar
 
 ## 5. Kernel Bridge — C11 Interface
 
-All entry points must be `extern "C"` with signatures valid as C11. No C++ types, mangled
-names, or overloaded symbols may appear at the ABI boundary.
+All entry points must be `extern "C"` with signatures valid as C11. No C++
+types, mangled names, or overloaded symbols may appear at the ABI boundary.
 
 ```cpp
 extern "C" {
@@ -317,7 +332,7 @@ extern "C" {
 
 ### 5.1 `cpp_module_init` Logic
 
-```
+```text
 1. Placement-new CppKernelModule into g_module_buf. Assign g_module.
    (Construction is trivial and cannot fail.)
 
@@ -333,15 +348,15 @@ extern "C" {
 4. Return 0.
 ```
 
-Note: `was_successful()` is no longer called. The `expected` return from step 2 is the
-complete signal. If `init()` returns a value, the module is valid. If it returns unexpected,
-the error code is the reason.
+Note: `was_successful()` is no longer called. The `expected` return from step 2
+is the complete signal. If `init()` returns a value, the module is valid. If it
+returns unexpected, the error code is the reason.
 
 ### 5.2 `cpp_module_exit` Logic
 
-```
+```text
 1. Call g_module->~CppKernelModule() explicitly.
-   (Safe even if init() failed partway — destructor is null-safe per §3.3.)
+   (Safe even if init() failed partway — destructor null-safe per §3.3.)
 2. Set g_module = nullptr.
 ```
 
@@ -354,19 +369,19 @@ the error code is the reason.
 `std::expected<T,E>` is a C++23 feature. Its availability in libstdc++ by GCC version:
 
 | Compiler | `<expected>` status |
-|---|---|
+| --- | --- |
 | GCC 12.0 | Not present |
 | GCC 12.1–12.3 | Present but incomplete in some builds |
 | GCC 13+ | Complete and stable |
 | Clang 16+ (libc++) | Complete and stable |
 
-**Chosen backport: `tl::expected`** — single-header, MIT licensed, freestanding-compatible,
-API-compatible with the C++23 standard.
+**Chosen backport: `tl::expected`** — single-header, MIT licensed,
+freestanding-compatible, API-compatible with the C++23 standard.
 
 ### 6.2 `compat/expected.h`
 
-The **only** header the codebase includes for `std::expected`. Never include `<expected>` or
-`tl/expected.hpp` directly in business logic.
+The **only** header the codebase includes for `std::expected`. Never include
+`<expected>` or `tl/expected.hpp` directly in business logic.
 
 ```cpp
 // compat/expected.h
@@ -405,17 +420,17 @@ inline void  operator delete(void*, void*)   noexcept {}
 ### 6.4 `compat/` Inventory
 
 | File | Purpose | Backport if missing |
-|---|---|---|
+| --- | --- | --- |
 | `compat/expected.h` | `std::expected<T,E>` | `tl::expected` (vendored) |
 | `compat/new_shim.h` | Freestanding placement new | Inline — no external dep |
 
-Policy: `#ifdef` for compiler/stdlib version detection belongs exclusively in `compat/`.
-Never in `src/` or `include/`.
+Policy: `#ifdef` for compiler/stdlib version detection belongs exclusively in
+`compat/`. Never in `src/` or `include/`.
 
 ### 6.5 Vendoring
 
-`tl/expected.hpp` must be vendored at `third_party/tl/expected.hpp`. No network fetches at
-build time. Version pinned in `third_party/VERSIONS.txt`.
+`tl/expected.hpp` must be vendored at `third_party/tl/expected.hpp`. No network
+fetches at build time. Version pinned in `third_party/VERSIONS.txt`.
 
 ---
 
@@ -423,7 +438,7 @@ build time. Version pinned in `third_party/VERSIONS.txt`.
 
 ### 7.1 Three-Mode CMake Matrix
 
-```
+```bash
 cmake -DBUILD_MODE=host      # Host compiler, mock headers, runs all tests
 cmake -DBUILD_MODE=platform  # G++12, mock headers, runs all tests
 cmake -DBUILD_MODE=ci        # Same as platform; non-zero exit on any failure
@@ -522,8 +537,8 @@ add_dependencies(kernel_module check_no_bug)
 
 ### 7.7 Linker
 
-- All modes: `-Wl,--no-undefined` — catches missing `operator new` definition at link time,
-  which is the intended behavior of the linker trap.
+- All modes: `-Wl,--no-undefined` — catches missing `operator new` definition at
+  link time, which is the intended behavior of the linker trap.
 - Platform mode: `-static` by default.
 
 ---
@@ -532,9 +547,9 @@ add_dependencies(kernel_module check_no_bug)
 
 ### 8.1 `linux/kernel.h`
 
-`BUG()` is defined (to `abort()`) so that any accidental call is loud and visible in tests.
-The CI BUG-gate (§7.6) ensures it never appears in source, but the definition remains as a
-safety net for mock test runs.
+`BUG()` is defined (to `abort()`) so that any accidental call is loud and
+visible in tests. The CI BUG-gate (§7.6) ensures it never appears in source,
+but the definition remains as a safety net for mock test runs.
 
 ```c
 #pragma once
@@ -565,15 +580,19 @@ static inline void kfree(void* p) { free(p); }
 #define __init
 #define __exit
 
-/* BUG() defined for visibility in tests — must never appear in src/ or include/ */
+/* BUG() for visibility in tests — must never appear in src/ or include/ */
 #define BUG() \
-    do { fprintf(stderr, "BUG() called at %s:%d\n", __FILE__, __LINE__); abort(); } while(0)
-#define BUG_ON(cond) do { if (cond) BUG(); } while(0)
+    do { \
+        fprintf(stderr, "BUG() at %s:%d\n", __FILE__, __LINE__); \
+        abort(); \
+    } while (0)
+#define BUG_ON(cond) do { if (cond) BUG(); } while (0)
 ```
 
-> **`__mock_kmalloc_fail`** is new in Rev 4. It allows `test_allocator.cpp` and `test_init.cpp`
-> to inject a single allocation failure without patching malloc, enabling clean testing of the
-> `kalloc<T>()` error path and the `init()` partial-failure + cleanup path.
+> **`__mock_kmalloc_fail`** is new in Rev 4. It allows `test_allocator.cpp` and
+> `test_init.cpp` to inject a single allocation failure without patching malloc,
+> enabling clean testing of the `kalloc<T>()` error path and the `init()`
+> partial-failure + cleanup path.
 
 ### 8.2 `linux/preempt.h`
 
@@ -620,47 +639,47 @@ extern void cpp_module_exit(void);
 
 ### 9.1 Test Gate Policy
 
-No platform build is valid unless all tests pass under G++12. `BUILD_MODE=ci` enforces this as
-a hard gate.
+No platform build is valid unless all tests pass under G++12. `BUILD_MODE=ci`
+enforces this as a hard gate.
 
 ### 9.2 Required Test Cases
 
 **`tests/test_init.cpp` — Two-phase initialization and cleanup:**
 
 | Test | Scenario | Expected outcome |
-|---|---|---|
+| --- | --- | --- |
 | `test_happy_path` | Normal init | `init()` returns value; `g_module` valid |
-| `test_alloc_fail_in_init` | `__mock_kmalloc_fail = 1` before `init()` | `init()` returns `unexpected(AllocFail)`; no panic; destructor cleans up safely |
-| `test_hw_fail` | Hardware handshake mock fails | `init()` returns `unexpected(HwHandshake)` |
-| `test_partial_init_cleanup` | First alloc succeeds, second fails | Destructor frees first alloc without double-free or crash |
-| `test_exit_after_failed_init` | `module_exit` called after failed `init()` | Safe — destructor handles null members |
-| `test_destructor_print` | Full lifecycle | `[CPP] Destructed` printed exactly once |
-| `test_errno_mapping` | `static_cast<int>` of each `ErrorCode` | Values match Linux errno negatives |
+| `test_alloc_fail_in_init` | kmalloc_fail=1 before init | AllocFail; cleanup |
+| `test_hw_fail` | HW handshake mock fails | unexpected(HwHandshake) |
+| `test_partial_init_cleanup` | First alloc ok, second fails | No double-free |
+| `test_exit_after_failed_init` | exit after failed init | Null-safe dtor |
+| `test_destructor_print` | Full lifecycle | `[CPP] Destructed` once |
+| `test_errno_mapping` | `static_cast<int>` of ErrorCode | Match Linux errno |
 
 **`tests/test_allocator.cpp` — `kalloc<T>()` and GFP flag selection:**
 
 | Test | Scenario | Expected outcome |
-|---|---|---|
-| `test_kalloc_success` | Normal process context | Returns valid pointer; `__mock_last_gfp == GFP_KERNEL` |
-| `test_kalloc_atomic` | `__mock_preempt_count = 1` | Returns valid pointer; `__mock_last_gfp == GFP_ATOMIC` |
-| `test_kalloc_irqs_disabled` | `__mock_irqs_disabled = 1` | `GFP_ATOMIC` selected |
-| `test_kalloc_nmi` | `__mock_in_nmi = 1` | `GFP_ATOMIC` selected |
-| `test_kalloc_fail` | `__mock_kmalloc_fail = 1` | Returns `unexpected(AllocFail)`; no panic; no abort |
-| `test_kfree_obj_null` | `kfree_obj(nullptr)` | No crash, no-op |
-| `test_kfree_obj_valid` | `kfree_obj` on `kalloc` result | Destructor called, memory freed |
+| --- | --- | --- |
+| `test_kalloc_success` | Normal process context | __mock_last_gfp==GFP_KERNEL |
+| `test_kalloc_atomic` | __mock_preempt_count=1 | __mock_last_gfp==GFP_ATOMIC |
+| `test_kalloc_irqs_disabled` | irqs_disabled=1 | GFP_ATOMIC |
+| `test_kalloc_nmi` | in_nmi=1 | GFP_ATOMIC |
+| `test_kalloc_fail` | kmalloc_fail=1 | unexpected(AllocFail) |
+| `test_kfree_obj_null` | kfree_obj(nullptr) | No-op |
+| `test_kfree_obj_valid` | kfree_obj(kalloc result) | Destructor + free |
 
 **`tests/test_compat.cpp` — Compatibility layer:**
 
 | Test | Scenario | Expected outcome |
-|---|---|---|
-| `test_expected_value` | `std::expected<int,int>` holding value | `.value()` correct |
-| `test_expected_error` | `std::unexpected(ErrorCode::AllocFail)` | `.error()` == `AllocFail` |
-| `test_expected_monadic` | `.and_then()` / `.or_else()` chaining | Correct propagation |
-| `test_nodiscard` | Discarded `[[nodiscard]]` return | Negative compile test — must fail |
-| `test_no_raw_new` | TU that calls `new Foo{}` | Negative link test — must fail to link |
+| --- | --- | --- |
+| `test_expected_value` | `expected<int,int>` value | .value() correct |
+| `test_expected_error` | unexpected(AllocFail) | .error()==AllocFail |
+| `test_expected_monadic` | .and_then/.or_else | Propagation |
+| `test_nodiscard` | Discard [[nodiscard]] return | Compile must fail |
+| `test_no_raw_new` | TU calls new Foo{} | Link must fail |
 
-> **`test_no_raw_new`** is a negative *link* test (not compile). It verifies the linker trap
-> is in place. The test TU calls `new int{}` and the test asserts that linking fails.
+> **`test_no_raw_new`** is a negative *link* test (not compile). It verifies the
+> linker trap. The test TU calls `new int{}` and the test asserts linking fails.
 
 ### 9.3 Running Tests
 
@@ -671,7 +690,8 @@ cmake --build build
 ctest --test-dir build -V
 
 # Platform mode (G++12)
-cmake -B build-platform -DBUILD_MODE=platform -DGCC12_CXX=/path/to/g++12
+cmake -B build-platform -DBUILD_MODE=platform \
+  -DGCC12_CXX=/path/to/g++12
 cmake --build build-platform
 ctest --test-dir build-platform -V
 
@@ -685,27 +705,27 @@ ctest --test-dir build-ci --output-on-failure
 
 ## 10. Directory Structure
 
-```
+```text
 project/
 ├── CMakeLists.txt
 ├── cmake/
-│   ├── CheckExpected.cmake           # std::expected probe module
-│   └── NegativeCompileTest.cmake     # Helpers for negative compile/link tests
+│   ├── CheckExpected.cmake       # std::expected probe
+│   └── NegativeCompileTest.cmake # Negative compile/link test helpers
 ├── compat/
 │   ├── expected.h                    # std::expected façade (native or tl::)
 │   └── new_shim.h                    # Freestanding placement new
 ├── include/
 │   ├── module.h                      # CppKernelModule declaration
-│   ├── kalloc.h                      # kalloc<T>(), kfree_obj<T>(), current_gfp_flags()
+│   ├── kalloc.h                  # kalloc<T>(), kfree_obj<T>(), current_gfp_flags()
 │   └── error.h                       # ErrorCode enum
 ├── src/
 │   ├── module.cpp                    # CppKernelModule implementation
-│   ├── operator_new.cpp              # operator delete only; operator new intentionally absent
+│   ├── operator_new.cpp          # operator delete only; operator new absent
 │   └── bridge.cpp                    # extern "C" entry points
 ├── mock_kernel/
 │   └── linux/
 │       ├── kernel.h                  # printk, kmalloc, kfree, BUG (mock)
-│       ├── preempt.h                 # in_atomic, irqs_disabled, in_nmi (injectable)
+│       ├── preempt.h             # in_atomic, irqs_disabled, in_nmi
 │       ├── module.h                  # module_init/exit macros
 │       └── errno.h                   # ENOMEM, EIO, EINVAL
 ├── third_party/
@@ -723,11 +743,11 @@ project/
 ## 11. Known Limitations & Future Work
 
 | Item | Status | Notes |
-|---|---|---|
-| Real Kbuild integration | Out of scope | Needs `__init`/`__exit` annotations and a Kbuild `Makefile` |
-| FPU guards | Not mocked | Stub `kernel_fpu_begin()`/`end()` if FP ever needed |
-| SMP / per-CPU data | Not addressed | `this_cpu_ptr()` and related need separate treatment |
-| NMI allocator strictness | Partially modeled | `GFP_ATOMIC` necessary but may not be sufficient for all NMI paths on all arches |
-| `kalloc_array` bounds safety | Not addressed | Array size overflow (`count * sizeof(T)`) should be checked before calling `kmalloc` |
-| GCC 12 `-Wno-interference-size` | Documented workaround | Remove when minimum GCC raised to 13 |
-| `tl::expected` monadic ops on GCC 12 | Verify at integration | Confirm `.and_then()`/`.or_else()` build cleanly with vendored version under `-std=c++23 -fno-exceptions` |
+| --- | --- | --- |
+| Real Kbuild integration | Out of scope | __init/__exit, Kbuild Makefile |
+| FPU guards | Not mocked | Stub kernel_fpu_begin/end |
+| SMP / per-CPU data | Not addressed | this_cpu_ptr etc. |
+| NMI allocator strictness | Partially modeled | GFP_ATOMIC insufficient |
+| `kalloc_array` bounds | Not addressed | Check count*sizeof(T) |
+| GCC 12 -Wno-interference-size | Workaround | Remove at GCC 13 |
+| tl::expected on GCC 12 | Verify | monadic ops under c++23 |
