@@ -1,7 +1,7 @@
 # cmake/KbuildModule.cmake
 
 function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
-    set(options "")
+    set(options ALL)
     set(oneValueArgs KBUILD_DIR)
     set(multiValueArgs "")
     cmake_parse_arguments(KB "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -32,27 +32,37 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
     set(MOD_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/kbuild_${TARGET_NAME}")
     file(MAKE_DIRECTORY "${MOD_BUILD_DIR}")
 
-    # 4. Get the static library path
-    # We need the actual file on disk
-    set(LIB_PATH "$<TARGET_FILE:${CPP_LIB_TARGET}>")
+    # 4. Paths
+    set(BRIDGE_SRC "${CMAKE_SOURCE_DIR}/src/linux_bridge.c")
+    set(LIB_NAME "libkernel_module.a")
 
     # 5. Generate Kbuild Makefile
-    # We use a template approach or just write it directly
-    set(KBUILD_MAKEFILE_CONTENT
-"obj-m += ${TARGET_NAME}.o\n"
-"${TARGET_NAME}-y := ${LIB_PATH}\n"
+    string(CONCAT KBUILD_MAKEFILE_CONTENT
+        "obj-m += ${TARGET_NAME}.o\n"
+        "${TARGET_NAME}-y := linux_bridge.o ${LIB_NAME}\n"
     )
     
-    # We need to use file(GENERATE) because targets files are only known at generate time
+    file(GENERATE 
+        OUTPUT "${MOD_BUILD_DIR}/linux_bridge.c"
+        INPUT "${BRIDGE_SRC}"
+    )
+
     file(GENERATE 
         OUTPUT "${MOD_BUILD_DIR}/Makefile"
         CONTENT "${KBUILD_MAKEFILE_CONTENT}"
     )
 
     # 6. Custom target to run Kbuild
-    # We must ensure the CPP_LIB_TARGET is built first
-    add_custom_target(${TARGET_NAME}_ko
-        COMMAND make -C "${KB_KBUILD_DIR}" M="${MOD_BUILD_DIR}" modules
+    if(KB_ALL)
+        set(ALL_ARG "ALL")
+    else()
+        set(ALL_ARG "")
+    endif()
+
+    add_custom_target(${TARGET_NAME}_ko ${ALL_ARG}
+        # Copy the lib to the staging dir first
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${CPP_LIB_TARGET}>" "${MOD_BUILD_DIR}/${LIB_NAME}"
+        COMMAND make -C "${KB_KBUILD_DIR}" M=${MOD_BUILD_DIR} modules
         DEPENDS ${CPP_LIB_TARGET}
         WORKING_DIRECTORY "${MOD_BUILD_DIR}"
         COMMENT "Invoking Kbuild to produce ${TARGET_NAME}.ko"

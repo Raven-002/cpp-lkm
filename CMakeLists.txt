@@ -55,13 +55,29 @@ add_library(kernel_module STATIC
     src/module.cpp
     src/operator_new.cpp
     src/bridge.cpp
-    src/mock_globals.cpp
 )
 
-# BUG() Usage Gate
+# Match kernel ABI so the .ko loads (x86_64)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    target_compile_options(kernel_module PRIVATE -mcmodel=kernel)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(kernel_module PRIVATE
+            -mindirect-branch=thunk-extern
+            -mindirect-branch-register
+            -mfunction-return=thunk-extern
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(kernel_module PRIVATE
+            -mretpoline-external-thunk
+            -mfunction-return=thunk-extern
+        )
+    endif()
+endif()
+
+# BUG() Usage Gate (C++ sources only; linux_bridge.c may mention "C++ BUG()" in panic text)
 add_custom_target(check_no_bug
     COMMAND bash -c
-        "grep -rn 'BUG(' ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include \
+        "grep -rn 'BUG(' ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include --include='*.cpp' --include='*.h' --include='*.hpp' \
          && echo 'FAIL: BUG() found in module source' && exit 1 \
          || echo 'OK: no BUG() in module source'"
     VERBATIM
@@ -77,7 +93,7 @@ set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
 
 foreach(test_src ${TEST_SRCS})
     get_filename_component(test_name ${test_src} NAME_WE)
-    add_executable(${test_name} ${test_src})
+    add_executable(${test_name} ${test_src} tests/mock_globals.cpp)
     target_link_libraries(${test_name} PRIVATE kernel_module)
     target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -91,7 +107,5 @@ add_test(NAME test_nodiscard_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINAR
 add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_no_raw_new)
 
 # Real KO generation via Kbuild
-if(NOT BUILD_MODE STREQUAL "host")
-    add_kbuild_module(cpp_lkm kernel_module)
-endif()
+add_kbuild_module(cpp_lkm kernel_module ALL)
 

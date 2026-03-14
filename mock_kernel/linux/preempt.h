@@ -1,17 +1,15 @@
 #pragma once
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern int __mock_preempt_count;
-extern int __mock_irqs_disabled;
-extern int __mock_in_nmi;
+extern int cpp_in_atomic(void);
+extern int cpp_irqs_disabled(void);
+extern int cpp_in_nmi(void);
 
-static inline int in_atomic(void)      { return __mock_preempt_count != 0; }
-static inline int irqs_disabled(void)  { return __mock_irqs_disabled != 0; }
-static inline int in_nmi(void)         { return __mock_in_nmi != 0; }
+#define in_atomic()     cpp_in_atomic()
+#define irqs_disabled() cpp_irqs_disabled()
+#define in_nmi()        cpp_in_nmi()
 
 #ifdef __cplusplus
 }

@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <stdio.h>
 #include <assert.h>
+#include "mock_globals.h"
 
 void test_happy_path() {
     __mock_kmalloc_fail = 0;

@@ -3,6 +3,7 @@
 #include <linux/preempt.h>
 #include <stdio.h>
 #include <assert.h>
+#include "mock_globals.h"
 
 struct TestObj {
     int x;
