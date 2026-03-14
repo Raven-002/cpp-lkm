@@ -1,5 +1,3 @@
-# RunNegativeLinkTest.cmake
-# Expects: COMPILER, CXX_FLAGS, LINK_FLAGS, SOURCE, OBJ_TO_LINK
 separate_arguments(CXX_FLAGS_LIST UNIX_COMMAND ${CXX_FLAGS})
 separate_arguments(LINK_FLAGS_LIST UNIX_COMMAND ${LINK_FLAGS})
 execute_process(

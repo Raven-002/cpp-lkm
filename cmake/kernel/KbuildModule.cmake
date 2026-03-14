@@ -1,25 +1,18 @@
-# cmake/KbuildModule.cmake
-
 function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
     set(options ALL)
     set(oneValueArgs KBUILD_DIR)
     set(multiValueArgs "")
     cmake_parse_arguments(KB "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    # 1. Resolve KBUILD_DIR
     if(NOT KB_KBUILD_DIR)
-        # Respect a cache variable set via -DKBUILD_DIR=... at configure time.
-        # (Use plain variable access for CMake 3.20 compatibility.)
         if(DEFINED KBUILD_DIR AND NOT "${KBUILD_DIR}" STREQUAL "")
             set(KB_KBUILD_DIR "${KBUILD_DIR}")
         else()
-            # Default to running system's build dir
             execute_process(COMMAND uname -r OUTPUT_VARIABLE KERNEL_RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
             set(KB_KBUILD_DIR "/lib/modules/${KERNEL_RELEASE}/build")
         endif()
     endif()
 
-    # 2. Validation
     if(NOT EXISTS "${KB_KBUILD_DIR}/Makefile")
         message(FATAL_ERROR
             "Kernel build directory not found at '${KB_KBUILD_DIR}'.\n"
@@ -30,31 +23,27 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
 
     message(STATUS "Found Kbuild directory: ${KB_KBUILD_DIR}")
 
-    # 3. Directories
     set(MOD_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/kbuild_${TARGET_NAME}")
     file(MAKE_DIRECTORY "${MOD_BUILD_DIR}")
 
-    # 4. Paths
     set(BRIDGE_SRC "${CMAKE_SOURCE_DIR}/src/linux_bridge.c")
     set(LIB_NAME "libkernel_module.a")
 
-    # 5. Generate Kbuild Makefile
     string(CONCAT KBUILD_MAKEFILE_CONTENT
         "obj-m += ${TARGET_NAME}.o\n"
         "${TARGET_NAME}-y := linux_bridge.o ${LIB_NAME}\n"
     )
-    
-    file(GENERATE 
+
+    file(GENERATE
         OUTPUT "${MOD_BUILD_DIR}/linux_bridge.c"
         INPUT "${BRIDGE_SRC}"
     )
 
-    file(GENERATE 
+    file(GENERATE
         OUTPUT "${MOD_BUILD_DIR}/Makefile"
         CONTENT "${KBUILD_MAKEFILE_CONTENT}"
     )
 
-    # 6. Custom target to run Kbuild
     if(KB_ALL)
         set(ALL_ARG "ALL")
     else()
@@ -62,7 +51,6 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
     endif()
 
     add_custom_target(${TARGET_NAME}_ko ${ALL_ARG}
-        # Copy the lib to the staging dir first
         COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${CPP_LIB_TARGET}>" "${MOD_BUILD_DIR}/${LIB_NAME}"
         COMMAND make -C "${KB_KBUILD_DIR}" M=${MOD_BUILD_DIR} modules
         DEPENDS ${CPP_LIB_TARGET}
@@ -71,7 +59,6 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
         VERBATIM
     )
 
-    # 7. Post-build: copy the .ko to the main build dir for convenience
     add_custom_command(TARGET ${TARGET_NAME}_ko POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy "${MOD_BUILD_DIR}/${TARGET_NAME}.ko" "${CMAKE_BINARY_DIR}/${TARGET_NAME}.ko"
         COMMENT "Copying ${TARGET_NAME}.ko to build directory"
