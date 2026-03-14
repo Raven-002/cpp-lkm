@@ -8,6 +8,7 @@ extern "C" {
     // Allocation tracking
     gfp_t __mock_last_gfp = 0;
     int   __mock_kmalloc_fail = 0;
+    int   __mock_kmalloc_fail_after = 0;
 
     // Context tracking
     int   __mock_preempt_count = 0;
@@ -25,6 +26,12 @@ extern "C" {
 
     void *cpp_kmalloc(size_t size, gfp_t flags) {
         __mock_last_gfp = flags;
+        if (__mock_kmalloc_fail_after > 0) {
+            --__mock_kmalloc_fail_after;
+            if (__mock_kmalloc_fail_after == 0) {
+                return NULL;
+            }
+        }
         if (__mock_kmalloc_fail) {
             __mock_kmalloc_fail = 0;
             return NULL;

@@ -1,0 +1,9 @@
+Checks: >
+  -*,
+  bugprone-*,
+  performance-*,
+  readability-*,
+  -readability-magic-numbers
+WarningsAsErrors: ''
+HeaderFilterRegex: '^(include|src|tests|compat|mock_kernel)/'
+FormatStyle: file

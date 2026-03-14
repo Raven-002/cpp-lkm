@@ -15,6 +15,7 @@ void test_kalloc_success() {
     __mock_irqs_disabled = 0;
     __mock_in_nmi = 0;
     __mock_kmalloc_fail = 0;
+    __mock_kmalloc_fail_after = 0;
 
     auto p = kalloc<TestObj>(42);
     assert(p.has_value());
@@ -26,6 +27,7 @@ void test_kalloc_success() {
 
 void test_kalloc_atomic() {
     __mock_preempt_count = 1;
+    __mock_kmalloc_fail_after = 0;
 
     auto p = kalloc<TestObj>(10);
     assert(p.has_value());
@@ -37,6 +39,7 @@ void test_kalloc_atomic() {
 
 void test_kalloc_fail() {
     __mock_kmalloc_fail = 1;
+    __mock_kmalloc_fail_after = 0;
     auto p = kalloc<TestObj>(99);
     assert(!p.has_value());
     assert(p.error() == ErrorCode::AllocFail);
@@ -45,6 +48,7 @@ void test_kalloc_fail() {
 void test_kalloc_array_success() {
     __mock_kmalloc_fail = 0;
     __mock_preempt_count = 0;
+    __mock_kmalloc_fail_after = 0;
     
     auto arr = kalloc_array<int>(10);
     assert(arr.has_value());

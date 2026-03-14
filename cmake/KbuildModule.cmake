@@ -8,8 +8,10 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
 
     # 1. Resolve KBUILD_DIR
     if(NOT KB_KBUILD_DIR)
-        if(DEFINED CACHE{KBUILD_DIR})
-            set(KB_KBUILD_DIR $CACHE{KBUILD_DIR})
+        # Respect a cache variable set via -DKBUILD_DIR=... at configure time.
+        # (Use plain variable access for CMake 3.20 compatibility.)
+        if(DEFINED KBUILD_DIR AND NOT "${KBUILD_DIR}" STREQUAL "")
+            set(KB_KBUILD_DIR "${KBUILD_DIR}")
         else()
             # Default to running system's build dir
             execute_process(COMMAND uname -r OUTPUT_VARIABLE KERNEL_RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)

@@ -15,13 +15,17 @@ void test_happy_path() {
 void test_alloc_fail_in_init() {
     __mock_kmalloc_fail = 1;
     int res = cpp_module_init();
-    assert(res == -12); // -ENOMEM
+    assert(res == static_cast<int>(ErrorCode::AllocFail));
     cpp_module_exit(); // Should be safe
 }
 
 void test_partial_init_cleanup() {
-    // We could make the second alloc fail, but mocking exactly one is tricky with our simple fail flag
-    // Let's rely on test_alloc_fail_in_init and manual review
+    __mock_kmalloc_fail = 0;
+    __mock_kmalloc_fail_after = 2; // fail the 2nd allocation (resource2)
+    int res = cpp_module_init();
+    assert(res == static_cast<int>(ErrorCode::AllocFail));
+    // init failed, module instance should have been torn down; exit must be safe
+    cpp_module_exit();
 }
 
 void test_exit_after_failed_init() {
@@ -41,6 +45,7 @@ void test_errno_mapping() {
 int main() {
     test_happy_path();
     test_alloc_fail_in_init();
+    test_partial_init_cleanup();
     test_exit_after_failed_init();
     test_errno_mapping();
     printf("All init tests passed!\n");

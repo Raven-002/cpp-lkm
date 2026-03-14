@@ -39,5 +39,33 @@ Identical to platform mode but acts as a mandatory test gate before release.
 - `mock_kernel/`: Mock Linux kernel headers for host-side compilation and testing.
 - `include/`: Core module headers (`kalloc.h`, `module.h`, `error.h`).
 - `src/`: Core implementation (`module.cpp`, `operator_new.cpp`, `bridge.cpp`).
-- `tests/`: 21 test cases encompassing initialization, allocation, and negative compile/link tests.
+- `tests/`: 3 host test executables (init/allocator/compat) plus negative compile/link tests.
 - `third_party/`: Vendored dependencies (`tl::expected`).
+
+## Building the real `.ko` (Kbuild)
+
+By default, **host/dev mode does not build a `.ko`**. To build the kernel module artifact:
+
+```bash
+cmake -B build -DBUILD_MODE=host -DBUILD_KO=ON
+cmake --build build
+```
+
+You can point at a specific kernel build directory:
+
+```bash
+cmake -B build -DBUILD_MODE=host -DBUILD_KO=ON -DKBUILD_DIR=/lib/modules/$(uname -r)/build
+cmake --build build
+```
+
+The produced artifact is copied to `build/cpp_lkm.ko`.
+
+## Formatting
+
+If `clang-format` is installed, you can run:
+
+```bash
+cmake -B build -DBUILD_MODE=host
+cmake --build build --target format
+cmake --build build --target format-check
+```

@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 project(cpp_kernel_module LANGUAGES CXX)
 
 set(BUILD_MODE "host" CACHE STRING "Build mode: host, platform, ci")
+option(BUILD_KO "Build the real .ko via Kbuild" OFF)
+if(NOT BUILD_MODE STREQUAL "host")
+    set(BUILD_KO_DEFAULT ON)
+else()
+    set(BUILD_KO_DEFAULT OFF)
+endif()
+if(NOT DEFINED CACHE{BUILD_KO})
+    set(BUILD_KO ${BUILD_KO_DEFAULT} CACHE BOOL "Build the real .ko via Kbuild" FORCE)
+endif()
 
 # Toolchain version enforcement
 if(BUILD_MODE STREQUAL "host")
@@ -57,20 +66,25 @@ add_library(kernel_module STATIC
     src/bridge.cpp
 )
 
-# Match kernel ABI so the .ko loads (x86_64)
+# Match kernel ABI so the .ko loads (x86_64).
+# When BUILD_KO=ON we need these flags so the .ko is loadable.
+# When BUILD_KO=OFF in host mode, we must NOT use them or test executables fail to link
+# (they need __x86_return_thunk which is only in the kernel).
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
-    target_compile_options(kernel_module PRIVATE -mcmodel=kernel)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(kernel_module PRIVATE
-            -mindirect-branch=thunk-extern
-            -mindirect-branch-register
-            -mfunction-return=thunk-extern
-        )
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(kernel_module PRIVATE
-            -mretpoline-external-thunk
-            -mfunction-return=thunk-extern
-        )
+    if(BUILD_KO OR NOT BUILD_MODE STREQUAL "host")
+        target_compile_options(kernel_module PRIVATE -mcmodel=kernel)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(kernel_module PRIVATE
+                -mindirect-branch=thunk-extern
+                -mindirect-branch-register
+                -mfunction-return=thunk-extern
+            )
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+            target_compile_options(kernel_module PRIVATE
+                -mretpoline-external-thunk
+                -mfunction-return=thunk-extern
+            )
+        endif()
     endif()
 endif()
 
@@ -88,24 +102,60 @@ add_dependencies(kernel_module check_no_bug)
 enable_testing()
 include(cmake/NegativeCompileTest.cmake)
 
-# Test Targets
+# Test Targets (only when not building .ko: kernel_module has retpoline when BUILD_KO=ON and tests would fail to link)
 set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp)
 
-foreach(test_src ${TEST_SRCS})
-    get_filename_component(test_name ${test_src} NAME_WE)
-    add_executable(${test_name} ${test_src} tests/mock_globals.cpp)
-    target_link_libraries(${test_name} PRIVATE kernel_module)
-    target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
-    add_test(NAME ${test_name} COMMAND ${test_name})
-endforeach()
+if(NOT BUILD_KO)
+    foreach(test_src ${TEST_SRCS})
+        get_filename_component(test_name ${test_src} NAME_WE)
+        add_executable(${test_name} ${test_src} tests/mock_globals.cpp)
+        target_link_libraries(${test_name} PRIVATE kernel_module)
+        target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
+        add_test(NAME ${test_name} COMMAND ${test_name})
+    endforeach()
 
-# Negative Tests
+    add_negative_link_test(test_no_raw_new ${CMAKE_SOURCE_DIR}/tests/test_negative_new.cpp)
+    add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_no_raw_new)
+endif()
+
+# Negative compile test (does not link kernel_module, so always available)
 add_negative_compile_test(test_nodiscard ${CMAKE_SOURCE_DIR}/tests/test_nodiscard.cpp)
-add_negative_link_test(test_no_raw_new ${CMAKE_SOURCE_DIR}/tests/test_negative_new.cpp)
-
 add_test(NAME test_nodiscard_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_nodiscard)
-add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_no_raw_new)
 
 # Real KO generation via Kbuild
-add_kbuild_module(cpp_lkm kernel_module ALL)
+if(BUILD_KO)
+    add_kbuild_module(cpp_lkm kernel_module ALL)
+endif()
+
+# Formatting helpers (optional)
+find_program(CLANG_FORMAT_EXE NAMES clang-format)
+if(CLANG_FORMAT_EXE)
+    file(GLOB_RECURSE FORMAT_SOURCES
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/*.h"
+        "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_SOURCE_DIR}/tests/*.cpp"
+        "${CMAKE_SOURCE_DIR}/tests/*.h"
+        "${CMAKE_SOURCE_DIR}/compat/*.h"
+        "${CMAKE_SOURCE_DIR}/mock_kernel/*.h"
+        "${CMAKE_SOURCE_DIR}/mock_kernel/*/*.h"
+        "${CMAKE_SOURCE_DIR}/mock_kernel/*/*/*.h"
+    )
+
+    add_custom_target(format
+        COMMAND "${CLANG_FORMAT_EXE}" -i ${FORMAT_SOURCES}
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Running clang-format"
+        VERBATIM
+    )
+
+    add_custom_target(format-check
+        COMMAND "${CLANG_FORMAT_EXE}" --dry-run -Werror ${FORMAT_SOURCES}
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Checking clang-format"
+        VERBATIM
+    )
+else()
+    message(STATUS "clang-format not found; format targets disabled")
+endif()
 
