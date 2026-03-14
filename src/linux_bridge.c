@@ -4,6 +4,16 @@
 #include <linux/hardirq.h>
 #include <linux/irqflags.h>
 
+/* Forward declarations to satisfy -Wmissing-prototypes */
+int cpp_printk(const char *fmt, ...);
+void *cpp_kmalloc(size_t size, gfp_t flags);
+void cpp_kfree(const void *p);
+void cpp_assert_fail(const char *expr, const char *file, int line, const char *func);
+void __assert_fail(const char *assertion, const char *file, int line, const char *function);
+int cpp_in_atomic(void);
+int cpp_irqs_disabled(void);
+int cpp_in_nmi(void);
+
 // This file is compiled by Kbuild to provide the necessary 
 // kernel module metadata and entry points.
 
