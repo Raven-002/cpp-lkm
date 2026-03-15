@@ -9,9 +9,9 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
             set(KB_KBUILD_DIR "${KBUILD_DIR}")
         else()
             execute_process(
-                command uname -r
-                output_variable KERNEL_RELEASE
-                output_strip_trailing_whitespace
+                COMMAND uname -r
+                OUTPUT_VARIABLE KERNEL_RELEASE
+                OUTPUT_STRIP_TRAILING_WHITESPACE
             )
             set(KB_KBUILD_DIR "/lib/modules/${KERNEL_RELEASE}/build")
         endif()

@@ -1,7 +1,7 @@
 #pragma once
-#include "compat/expected.h"
-#include "compat/new_shim.h"
-#include "error.h"
+#include "compat/expected.hpp"
+#include "compat/new_shim.hpp"
+#include "error.hpp"
 
 #include <linux/preempt.h>
 #include <linux/slab.h>

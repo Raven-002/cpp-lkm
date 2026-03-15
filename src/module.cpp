@@ -1,6 +1,6 @@
-#include "module.h"
+#include "module.hpp"
 
-#include "kalloc.h"
+#include "kalloc.hpp"
 
 #include <linux/kernel.h>
 

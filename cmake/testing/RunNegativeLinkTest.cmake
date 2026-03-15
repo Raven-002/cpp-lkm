@@ -1,5 +1,5 @@
-separate_arguments(CXX_FLAGS_LIST unix_command ${CXX_FLAGS})
-separate_arguments(LINK_FLAGS_LIST unix_command ${LINK_FLAGS})
+separate_arguments(CXX_FLAGS_LIST UNIX_COMMAND ${CXX_FLAGS})
+separate_arguments(LINK_FLAGS_LIST UNIX_COMMAND ${LINK_FLAGS})
 execute_process(
     COMMAND ${COMPILER} ${CXX_FLAGS_LIST} ${SOURCE} ${OBJ_TO_LINK} ${LINK_FLAGS_LIST} -o /dev/null
     RESULT_VARIABLE RES

@@ -1,4 +1,4 @@
-// compat/expected.h
+// compat/expected.hpp
 #pragma once
 
 #if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L

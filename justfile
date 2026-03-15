@@ -111,14 +111,17 @@ smoke: ko
   ko_path="{{BUILD_DIR}}/cpp_lkm.ko" && \
   if [[ ! -f "$ko_path" ]]; then echo "Missing $ko_path. Build failed?"; exit 1; fi && \
   name="cpp_lkm" && \
+  before_epoch=$(date +%s) && \
   echo "== insmod ==" && \
   sudo insmod "$ko_path" || { echo "insmod failed"; exit 1; } && \
-  echo "== dmesg (recent, filtered) ==" && \
-  sudo dmesg --color=never | tail -n 200 | sed -n '/\[CPP\]/p' && \
+  since_sec=$(( $(date +%s) - before_epoch + 1 )) && \
+  echo "== dmesg (since ${since_sec}s ago, filtered) ==" && \
+  sudo dmesg --color=never -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p' && \
   echo "== rmmod ==" && \
   sudo rmmod "$name" || { echo "rmmod failed"; exit 1; } && \
-  echo "== dmesg (recent, filtered) ==" && \
-  sudo dmesg --color=never | tail -n 200 | sed -n '/\[CPP\]/p'
+  since_sec=$(( $(date +%s) - before_epoch + 1 )) && \
+  echo "== dmesg (since ${since_sec}s ago, filtered) ==" && \
+  sudo dmesg --color=never -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p'
 
 # Attempts to remove the module if it is loaded (useful after a failed smoke run).
 smoke-clean:

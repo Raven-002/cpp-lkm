@@ -1,4 +1,4 @@
-#include "compat/expected.h"
+#include "compat/expected.hpp"
 
 #include <assert.h>
 #include <stdio.h>

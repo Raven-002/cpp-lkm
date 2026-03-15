@@ -1,5 +1,5 @@
-#include "kalloc.h"
-#include "mock_globals.h"
+#include "kalloc.hpp"
+#include "mock_globals.hpp"
 
 #include <assert.h>
 #include <linux/kernel.h>

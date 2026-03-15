@@ -77,7 +77,7 @@ at runtime.
 // If you are seeing a linker error referencing operator new(size_t),
 // you have used 'new T{}' in business logic. Use kalloc<T>() instead.
 //
-// Placement new (operator new(size_t, void*)) is defined in compat/new_shim.h
+// Placement new (operator new(size_t, void*)) is defined in compat/new_shim.hpp
 // and is the only permitted form of new in this codebase.
 void operator delete(void* p) noexcept;   // defined — wraps kfree
 void operator delete(void* p, size_t) noexcept; // sized delete — same
@@ -98,10 +98,10 @@ a typed `std::expected` so failures propagate naturally through the
 `std::expected` chain.
 
 ```cpp
-// include/kalloc.h
+// include/kalloc.hpp
 #pragma once
-#include "compat/expected.h"
-#include "error.h"
+#include "compat/expected.hpp"
+#include "error.hpp"
 #include <linux/slab.h>   // kmalloc / kfree
 #include <linux/preempt.h>
 
@@ -218,8 +218,8 @@ add_dependencies(kernel_module check_no_bug)
 ### 3.2 The `CppKernelModule` Class
 
 ```cpp
-#include "compat/expected.h"
-#include "error.h"
+#include "compat/expected.hpp"
+#include "error.hpp"
 
 class CppKernelModule {
 public:
@@ -378,13 +378,13 @@ returns unexpected, the error code is the reason.
 **Chosen backport: `tl::expected`** — single-header, MIT licensed,
 freestanding-compatible, API-compatible with the C++23 standard.
 
-### 6.2 `compat/expected.h`
+### 6.2 `compat/expected.hpp`
 
 The **only** header the codebase includes for `std::expected`. Never include
 `<expected>` or `tl/expected.hpp` directly in business logic.
 
 ```cpp
-// compat/expected.h
+// compat/expected.hpp
 #pragma once
 
 #if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
@@ -405,12 +405,12 @@ The **only** header the codebase includes for `std::expected`. Never include
 #endif
 ```
 
-### 6.3 `compat/new_shim.h`
+### 6.3 `compat/new_shim.hpp`
 
 Placement new only. Must not pull in libc or libstdc++ headers.
 
 ```cpp
-// compat/new_shim.h
+// compat/new_shim.hpp
 #pragma once
 #include <stddef.h>
 inline void* operator new  (size_t, void* p) noexcept { return p; }
@@ -421,8 +421,8 @@ inline void  operator delete(void*, void*)   noexcept {}
 
 | File | Purpose | Backport if missing |
 | --- | --- | --- |
-| `compat/expected.h` | `std::expected<T,E>` | `tl::expected` (vendored) |
-| `compat/new_shim.h` | Freestanding placement new | Inline — no external dep |
+| `compat/expected.hpp` | `std::expected<T,E>` | `tl::expected` (vendored) |
+| `compat/new_shim.hpp` | Freestanding placement new | Inline — no external dep |
 
 Policy: `#ifdef` for compiler/stdlib version detection belongs exclusively in
 `compat/`. Never in `src/` or `include/`.
@@ -712,12 +712,12 @@ project/
 │   ├── CheckExpected.cmake       # std::expected probe
 │   └── NegativeCompileTest.cmake # Negative compile/link test helpers
 ├── compat/
-│   ├── expected.h                    # std::expected façade (native or tl::)
-│   └── new_shim.h                    # Freestanding placement new
+│   ├── expected.hpp                   # std::expected façade (native or tl::)
+│   └── new_shim.hpp                   # Freestanding placement new
 ├── include/
-│   ├── module.h                      # CppKernelModule declaration
-│   ├── kalloc.h                  # kalloc<T>(), kfree_obj<T>(), current_gfp_flags()
-│   └── error.h                       # ErrorCode enum
+│   ├── module.hpp                     # CppKernelModule declaration
+│   ├── kalloc.hpp                 # kalloc<T>(), kfree_obj<T>(), current_gfp_flags()
+│   └── error.hpp                     # ErrorCode enum
 ├── src/
 │   ├── module.cpp                    # CppKernelModule implementation
 │   ├── operator_new.cpp          # operator delete only; operator new absent

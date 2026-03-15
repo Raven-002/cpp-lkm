@@ -1,4 +1,4 @@
-#include "compat/expected.h"
+#include "compat/expected.hpp"
 
 [[nodiscard]] std::expected<int, int> returns_expected()
 {

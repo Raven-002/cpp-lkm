@@ -5,7 +5,7 @@
 // If you are seeing a linker error referencing operator new(size_t),
 // you have used 'new T{}' in business logic. Use kalloc<T>() instead.
 //
-// Placement new (operator new(size_t, void*)) is defined in compat/new_shim.h
+// Placement new (operator new(size_t, void*)) is defined in compat/new_shim.hpp
 // and is the only permitted form of new in this codebase.
 
 void operator delete(void* p) noexcept

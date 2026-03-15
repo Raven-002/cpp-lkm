@@ -1,6 +1,6 @@
 #pragma once
-#include "compat/expected.h"
-#include "error.h"
+#include "compat/expected.hpp"
+#include "error.hpp"
 
 // A dummy resource used to demonstrate allocation and cleanup.
 struct TestResource

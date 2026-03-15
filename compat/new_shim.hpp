@@ -1,4 +1,4 @@
-// compat/new_shim.h
+// compat/new_shim.hpp
 #pragma once
 #include <stddef.h>
 

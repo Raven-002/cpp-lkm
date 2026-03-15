@@ -1,5 +1,5 @@
-#include "mock_globals.h"
-#include "module.h"
+#include "mock_globals.hpp"
+#include "module.hpp"
 
 #include <assert.h>
 #include <linux/kernel.h>

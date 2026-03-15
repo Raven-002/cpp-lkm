@@ -55,7 +55,7 @@ Identical to platform mode but acts as a mandatory test gate before release.
 
 - `compat/`: Polyfills and compiler workarounds (e.g. `tl::expected` for GCC 12).
 - `mock_kernel/`: Mock Linux kernel headers for host-side compilation and testing.
-- `include/`: Core module headers (`kalloc.h`, `module.h`, `error.h`).
+- `include/`: Core module headers (`kalloc.hpp`, `module.hpp`, `error.hpp`).
 - `src/`: Core implementation (`module.cpp`, `operator_new.cpp`, `bridge.cpp`).
 - `tests/`: 3 host test executables (init/allocator/compat) plus negative
   compile/link tests.

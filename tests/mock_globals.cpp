@@ -1,5 +1,4 @@
-#include <linux/kernel.h>
-#include <linux/preempt.h>
+#include "mock_globals.hpp"
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
