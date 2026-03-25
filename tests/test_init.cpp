@@ -1,12 +1,10 @@
 // tests/test_init.cpp
 // Tests for CppKernelModule two-phase initialization and cleanup.
-#include "error.hpp"
-#include "mock_globals.hpp"
+#include "cpp_lkm/common/error.hpp"
+#include "cpp_lkm/runtime/module_entry.h"
+#include "tests/support/mock_globals.hpp"
 
 #include <assert.h>
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/preempt.h>
 #include <stdio.h>
 
 void test_happy_path()

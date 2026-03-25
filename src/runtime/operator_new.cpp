@@ -1,4 +1,4 @@
-#include <linux/slab.h>
+#include "cpp_lkm/runtime/kernel_api.h"
 #include <stddef.h>
 
 // Heap-form operator new is intentionally NOT defined.
@@ -10,10 +10,10 @@
 
 void operator delete(void* p) noexcept
 {
-    kfree(p);
+    cpp_kfree(p);
 }
 
 void operator delete(void* p, size_t) noexcept
 {
-    kfree(p);
+    cpp_kfree(p);
 }

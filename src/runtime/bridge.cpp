@@ -1,7 +1,7 @@
-#include "error.hpp"
-#include "module.hpp"
+#include "cpp_lkm/common/error.hpp"
+#include "cpp_lkm/module/module.hpp"
 
-#include <linux/module.h>
+#include "cpp_lkm/runtime/module_entry.h"
 
 extern "C"
 {

@@ -1,11 +1,9 @@
 // tests/test_allocator.cpp
 // Tests for kalloc<T>(), kalloc_array<T>(), kfree_obj(), and GFP flag selection.
-#include "kalloc.hpp"
-#include "mock_globals.hpp"
+#include "cpp_lkm/runtime/kalloc.hpp"
+#include "tests/support/mock_globals.hpp"
 
 #include <assert.h>
-#include <linux/kernel.h>
-#include <linux/preempt.h>
 #include <stdio.h>
 
 struct TestObj
@@ -30,7 +28,7 @@ void test_kalloc_success()
     auto p = kalloc<TestObj>(42);
     assert(p.has_value());
     assert(p.value()->x == 42);
-    assert(__mock_last_gfp == GFP_KERNEL);
+    assert(__mock_last_gfp == CPP_GFP_KERNEL);
     kfree_obj(*p);
 }
 
@@ -40,7 +38,7 @@ void test_kalloc_atomic()
     __mock_preempt_count = 1; // in_atomic() → true
     auto p = kalloc<TestObj>(10);
     assert(p.has_value());
-    assert(__mock_last_gfp == GFP_ATOMIC);
+    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
     kfree_obj(*p);
 }
 
@@ -50,7 +48,7 @@ void test_kalloc_irqs_disabled()
     __mock_irqs_disabled = 1;
     auto p = kalloc<TestObj>(10);
     assert(p.has_value());
-    assert(__mock_last_gfp == GFP_ATOMIC);
+    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
     kfree_obj(*p);
 }
 
@@ -60,7 +58,7 @@ void test_kalloc_nmi()
     __mock_in_nmi = 1;
     auto p = kalloc<TestObj>(10);
     assert(p.has_value());
-    assert(__mock_last_gfp == GFP_ATOMIC);
+    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
     kfree_obj(*p);
 }
 
@@ -122,7 +120,7 @@ void test_kalloc_array_success()
     int* p = *arr;
     for (int i = 0; i < 10; ++i)
         p[i] = i;
-    kfree(p);
+    cpp_kfree(p);
 }
 
 void test_gfp_priority_with_multiple_signals()
@@ -133,7 +131,7 @@ void test_gfp_priority_with_multiple_signals()
     __mock_in_nmi = 1;
     auto p = kalloc<TestObj>(5);
     assert(p.has_value());
-    assert(__mock_last_gfp == GFP_ATOMIC);
+    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
     kfree_obj(*p);
 }
 

@@ -1,23 +1,23 @@
 #pragma once
+
 #include "compat/new_shim.hpp"
-#include "error.hpp"
+#include "cpp_lkm/common/error.hpp"
+#include "cpp_lkm/runtime/kernel_api.h"
 
 #include <expected>
 #include <limits>
-#include <linux/preempt.h>
-#include <linux/slab.h>
 #include <type_traits>
 
 // Select the correct GFP flag for the current CPU context.
 // Must never be called with a size of zero.
-[[nodiscard]] inline gfp_t current_gfp_flags() noexcept
+[[nodiscard]] inline cpp_gfp_t current_gfp_flags() noexcept
 {
-    return (in_atomic() || irqs_disabled() || in_nmi()) ? GFP_ATOMIC : GFP_KERNEL;
+    return (cpp_in_atomic() || cpp_irqs_disabled() || cpp_in_nmi()) ? CPP_GFP_ATOMIC : CPP_GFP_KERNEL;
 }
 
 [[nodiscard]] inline std::expected<void*, ErrorCode> kmalloc_or_error(size_t bytes) noexcept
 {
-    void* mem = kmalloc(bytes, current_gfp_flags());
+    void* mem = cpp_kmalloc(bytes, current_gfp_flags());
     if (!mem) [[unlikely]]
         return std::unexpected(ErrorCode::AllocFail);
     return mem;
@@ -60,6 +60,6 @@ template <typename T> void kfree_obj(T* p) noexcept
     if (p)
     {
         p->~T();
-        kfree(p);
+        cpp_kfree(p);
     }
 }

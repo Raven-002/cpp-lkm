@@ -29,9 +29,26 @@ target_include_directories(libkernel INTERFACE ${LIBKERNEL_INCLUDE_DIRS})
 include(cmake/kernel/KernelAbiFlags.cmake)
 include(cmake/kernel/KbuildModule.cmake)
 
-add_library(kernel_module STATIC src/module.cpp src/operator_new.cpp src/bridge.cpp)
+add_library(kernel_runtime_obj OBJECT src/runtime/bridge.cpp src/runtime/operator_new.cpp)
+target_link_libraries(kernel_runtime_obj PUBLIC libkernel)
+target_compile_options(kernel_runtime_obj PRIVATE ${KERNEL_ABI_COMPILE_OPTIONS})
+
+add_library(module_core_obj OBJECT src/module/module.cpp)
+target_link_libraries(module_core_obj PUBLIC libkernel)
+target_compile_options(module_core_obj PRIVATE ${KERNEL_ABI_COMPILE_OPTIONS})
+
+add_library(kernel_runtime STATIC $<TARGET_OBJECTS:kernel_runtime_obj>)
+target_link_libraries(kernel_runtime PUBLIC libkernel)
+
+add_library(module_core STATIC $<TARGET_OBJECTS:module_core_obj>)
+target_link_libraries(module_core PUBLIC libkernel kernel_runtime)
+
+add_library(
+    kernel_module STATIC
+    $<TARGET_OBJECTS:kernel_runtime_obj>
+    $<TARGET_OBJECTS:module_core_obj>
+)
 target_link_libraries(kernel_module PUBLIC libkernel)
-target_compile_options(kernel_module PRIVATE ${KERNEL_ABI_COMPILE_OPTIONS})
 
 add_custom_target(
     check_no_bug
@@ -49,7 +66,7 @@ include(cmake/testing/NegativeCompileTest.cmake)
 
 set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp)
 # mock_kernel_bridge.cpp provides host-mode kernel API stubs (state + bridge).
-set(TEST_MOCK_SRC tests/mock_kernel_bridge.cpp)
+set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
 
 if(NOT BUILD_KO)
     foreach(test_src ${TEST_SRCS})

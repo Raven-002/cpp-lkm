@@ -1,5 +1,6 @@
 #pragma once
-#include "error.hpp"
+
+#include "cpp_lkm/common/error.hpp"
 
 #include <expected>
 

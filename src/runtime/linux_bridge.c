@@ -14,7 +14,7 @@ int cpp_in_atomic(void);
 int cpp_irqs_disabled(void);
 int cpp_in_nmi(void);
 
-// This file is compiled by Kbuild to provide the necessary 
+// This file is compiled by Kbuild to provide the necessary
 // kernel module metadata and entry points.
 
 MODULE_LICENSE("GPL");

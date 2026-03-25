@@ -20,6 +20,4 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
     list(APPEND LIBKERNEL_CXX_FLAGS -Wno-interference-size)
 endif()
 
-set(LIBKERNEL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}
-                           ${CMAKE_SOURCE_DIR}/mock_kernel
-)
+set(LIBKERNEL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR})

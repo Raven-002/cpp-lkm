@@ -1,8 +1,7 @@
-#include "module.hpp"
+#include "cpp_lkm/module/module.hpp"
 
-#include "kalloc.hpp"
-
-#include <linux/kernel.h>
+#include "cpp_lkm/runtime/kalloc.hpp"
+#include "cpp_lkm/runtime/kernel_api.h"
 
 class CppKernelModule::Resource
 {
@@ -12,7 +11,7 @@ class CppKernelModule::Resource
 
 CppKernelModule::CppKernelModule()
 {
-    printk(KERN_INFO "[CPP] Constructed\n");
+    cpp_printk(CPP_KERN_INFO "[CPP] Constructed\n");
 }
 
 std::expected<void, ErrorCode> CppKernelModule::init()
@@ -34,7 +33,7 @@ std::expected<void, ErrorCode> CppKernelModule::init()
     _resource1->id = 1;
     _resource2->id = 2;
 
-    printk(KERN_INFO "[CPP] Initialized\n");
+    cpp_printk(CPP_KERN_INFO "[CPP] Initialized\n");
     return {};
 }
 
@@ -42,5 +41,5 @@ CppKernelModule::~CppKernelModule()
 {
     kfree_obj(_resource1);
     kfree_obj(_resource2);
-    printk(KERN_INFO "[CPP] Destructed\n");
+    cpp_printk(CPP_KERN_INFO "[CPP] Destructed\n");
 }
