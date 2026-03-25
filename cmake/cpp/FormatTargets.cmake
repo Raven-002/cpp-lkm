@@ -7,20 +7,11 @@ if(CLANG_FORMAT_EXE)
         GLOB_RECURSE
         FORMAT_SOURCES
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
-        "${CMAKE_SOURCE_DIR}/src/*/*.cpp"
         "${CMAKE_SOURCE_DIR}/src/*.h"
         "${CMAKE_SOURCE_DIR}/src/*.hpp"
-        "${CMAKE_SOURCE_DIR}/src/*/*.h"
-        "${CMAKE_SOURCE_DIR}/src/*/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*/*/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*/*/*.h"
         "${CMAKE_SOURCE_DIR}/tests/*.cpp"
-        "${CMAKE_SOURCE_DIR}/tests/*/*.cpp"
         "${CMAKE_SOURCE_DIR}/tests/*.hpp"
-        "${CMAKE_SOURCE_DIR}/tests/*/*.hpp"
-        "${CMAKE_SOURCE_DIR}/compat/*.hpp"
+        "${CMAKE_SOURCE_DIR}/tests/*.h"
     )
 
     add_custom_target(

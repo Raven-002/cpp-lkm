@@ -5,16 +5,8 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
     cmake_parse_arguments(KB "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT KB_KBUILD_DIR)
-        if(DEFINED KBUILD_DIR AND NOT "${KBUILD_DIR}" STREQUAL "")
-            set(KB_KBUILD_DIR "${KBUILD_DIR}")
-        else()
-            execute_process(
-                COMMAND uname -r
-                OUTPUT_VARIABLE KERNEL_RELEASE
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
-            set(KB_KBUILD_DIR "/lib/modules/${KERNEL_RELEASE}/build")
-        endif()
+        include(cmake/kernel/KernelBuildDir.cmake)
+        set(KB_KBUILD_DIR "${CPP_LKM_KERNEL_BUILD_DIR}")
     endif()
 
     if(NOT EXISTS "${KB_KBUILD_DIR}/Makefile")

@@ -1,22 +1,21 @@
 cmake_minimum_required(VERSION 3.20)
 project(cpp_kernel_module LANGUAGES CXX)
+if(POLICY CMP0127)
+    cmake_policy(SET CMP0127 NEW)
+endif()
 
 set(BUILD_MODE
     "host"
     CACHE STRING "Build mode: host, platform, ci"
 )
-option(BUILD_KO "Build the real .ko via Kbuild" OFF)
-if(NOT BUILD_MODE STREQUAL "host")
-    set(BUILD_KO_DEFAULT ON)
-else()
-    set(BUILD_KO_DEFAULT OFF)
-endif()
-if(NOT DEFINED CACHE{BUILD_KO})
-    set(BUILD_KO
-        ${BUILD_KO_DEFAULT}
-        CACHE BOOL "Build the real .ko via Kbuild" FORCE
-    )
-endif()
+include(CMakeDependentOption)
+cmake_dependent_option(
+    BUILD_KO
+    "Build the real .ko via Kbuild"
+    ON
+    "NOT BUILD_MODE STREQUAL \"host\""
+    OFF
+)
 
 include(cmake/kernel/ToolchainCheck.cmake)
 include(cmake/cpp/CxxFlags.cmake)
@@ -26,50 +25,7 @@ add_library(libkernel INTERFACE)
 target_compile_options(libkernel INTERFACE ${LIBKERNEL_CXX_FLAGS})
 target_include_directories(libkernel INTERFACE ${LIBKERNEL_INCLUDE_DIRS})
 
-# Expose kernel header search paths/defines to CMake C++ targets so IDE diagnostics
-# match kbuild's compile context (without requiring .ko builds).
-add_library(cpp-lkm-kernel-headers INTERFACE)
-
-if(DEFINED KBUILD_DIR AND NOT "${KBUILD_DIR}" STREQUAL "")
-    set(CPP_LKM_KERNEL_BUILD_DIR "${KBUILD_DIR}")
-else()
-    execute_process(
-        COMMAND uname -r
-        OUTPUT_VARIABLE CPP_LKM_KERNEL_RELEASE
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    set(CPP_LKM_KERNEL_BUILD_DIR "/lib/modules/${CPP_LKM_KERNEL_RELEASE}/build")
-endif()
-
-set(CPP_LKM_KERNEL_INCLUDE_DIRS)
-if(EXISTS "${CPP_LKM_KERNEL_BUILD_DIR}/Makefile")
-    execute_process(
-        COMMAND uname -m
-        OUTPUT_VARIABLE CPP_LKM_KERNEL_ARCH
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    list(
-        APPEND
-        CPP_LKM_KERNEL_INCLUDE_DIRS
-        "${CPP_LKM_KERNEL_BUILD_DIR}/include"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/include/uapi"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/include/generated"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/include/generated/uapi"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/arch/${CPP_LKM_KERNEL_ARCH}/include"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/arch/${CPP_LKM_KERNEL_ARCH}/include/uapi"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/arch/${CPP_LKM_KERNEL_ARCH}/include/generated"
-        "${CPP_LKM_KERNEL_BUILD_DIR}/arch/${CPP_LKM_KERNEL_ARCH}/include/generated/uapi"
-    )
-else()
-    message(
-        STATUS
-            "Kernel build dir not found at '${CPP_LKM_KERNEL_BUILD_DIR}';"
-            " cpp-lkm-kernel-headers will not add kernel include paths."
-    )
-endif()
-
-target_include_directories(cpp-lkm-kernel-headers INTERFACE ${CPP_LKM_KERNEL_INCLUDE_DIRS})
-target_compile_definitions(cpp-lkm-kernel-headers INTERFACE __KERNEL__ MODULE KBUILD_MODNAME=\"cpp_lkm\")
+include(cmake/kernel/KernelHeaders.cmake)
 
 include(cmake/kernel/KernelAbiFlags.cmake)
 include(cmake/kernel/KbuildModule.cmake)
@@ -87,11 +43,8 @@ target_link_libraries(kernel_module PUBLIC libkernel kernel_runtime module_core)
 
 add_custom_target(
     check_no_bug
-    COMMAND
-        bash -c
-        "grep -rn 'BUG(' ${CMAKE_SOURCE_DIR}/src --include='*.cpp' --include='*.h' --include='*.hpp' \
-         && echo 'FAIL: BUG() found in module source' && exit 1 \
-         || echo 'OK: no BUG() in module source'"
+    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/src -P
+            ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
     VERBATIM
 )
 add_dependencies(kernel_module check_no_bug)
