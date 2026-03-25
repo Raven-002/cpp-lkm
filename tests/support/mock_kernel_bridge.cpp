@@ -10,6 +10,7 @@
 //   3. Implement the mock wrapper here.
 #include "tests/support/mock_globals.hpp"
 
+#include <cstdint>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +30,12 @@ extern "C"
     int __mock_cpp_constructed_count = 0;
     int __mock_cpp_initialized_count = 0;
     int __mock_cpp_destructed_count = 0;
+    int __mock_chardev_registered = 0;
+    int __mock_chardev_reg_fail = 0;
+
+    static cpp_chardev_read_cb g_chardev_read_cb = nullptr;
+    static cpp_chardev_write_cb g_chardev_write_cb = nullptr;
+    static void* g_chardev_ctx = nullptr;
 
     // ----- Bridge implementations -----
 
@@ -93,5 +100,44 @@ extern "C"
     int cpp_in_nmi(void)
     {
         return __mock_in_nmi != 0;
+    }
+
+    int cpp_userspace_chardev_register(const char* name, unsigned int mode, void* ctx,
+                                        cpp_chardev_read_cb read_cb, cpp_chardev_write_cb write_cb)
+    {
+        (void)name;
+        (void)mode;
+        if (__mock_chardev_reg_fail != 0)
+        {
+            __mock_chardev_reg_fail = 0;
+            return -5; /* EIO */
+        }
+        g_chardev_ctx = ctx;
+        g_chardev_read_cb = read_cb;
+        g_chardev_write_cb = write_cb;
+        __mock_chardev_registered = 1;
+        return 0;
+    }
+
+    void cpp_userspace_chardev_unregister(void)
+    {
+        g_chardev_ctx = nullptr;
+        g_chardev_read_cb = nullptr;
+        g_chardev_write_cb = nullptr;
+        __mock_chardev_registered = 0;
+    }
+
+    cpp_ssize_t cpp_mock_chardev_simulate_read(void* kbuf, size_t len, std::int64_t* pos)
+    {
+        if (g_chardev_read_cb == nullptr || g_chardev_ctx == nullptr)
+            return -22;
+        return g_chardev_read_cb(g_chardev_ctx, kbuf, len, pos);
+    }
+
+    cpp_ssize_t cpp_mock_chardev_simulate_write(const void* kbuf, size_t len, std::int64_t* pos)
+    {
+        if (g_chardev_write_cb == nullptr || g_chardev_ctx == nullptr)
+            return -22;
+        return g_chardev_write_cb(g_chardev_ctx, kbuf, len, pos);
     }
 }

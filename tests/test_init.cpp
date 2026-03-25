@@ -15,8 +15,10 @@ void test_happy_path()
     assert(__mock_cpp_constructed_count == 1);
     assert(__mock_cpp_initialized_count == 1);
     assert(__mock_cpp_destructed_count == 0);
+    assert(__mock_chardev_registered == 1);
     cpp_module_exit();
     assert(__mock_cpp_destructed_count == 1);
+    assert(__mock_chardev_registered == 0);
 }
 
 void test_alloc_fail_in_init()

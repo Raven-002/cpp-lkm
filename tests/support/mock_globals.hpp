@@ -8,6 +8,8 @@
 //   __mock_in_nmi            - non-zero -> cpp_in_nmi() returns true
 //   __mock_cpp_constructed_count/__mock_cpp_initialized_count/__mock_cpp_destructed_count
 //                            - message counters extracted from cpp_printk output
+//   __mock_chardev_registered - set by mock cpp_userspace_chardev_register/unregister
+//   __mock_chardev_reg_fail    - next register returns failure (then resets to 0)
 #pragma once
 
 #include "cpp_lkm/runtime/kernel_api.h"
@@ -24,6 +26,8 @@ extern "C"
     extern int __mock_cpp_constructed_count;
     extern int __mock_cpp_initialized_count;
     extern int __mock_cpp_destructed_count;
+    extern int __mock_chardev_registered;
+    extern int __mock_chardev_reg_fail;
 }
 
 // Call at the start of every test to ensure clean mock state.
@@ -38,4 +42,6 @@ inline void reset_mock_state() noexcept
     __mock_cpp_constructed_count = 0;
     __mock_cpp_initialized_count = 0;
     __mock_cpp_destructed_count = 0;
+    __mock_chardev_registered = 0;
+    __mock_chardev_reg_fail = 0;
 }

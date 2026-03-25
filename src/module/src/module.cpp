@@ -33,6 +33,9 @@ Result<void> CppKernelModule::init()
     _resource1->id = 1;
     _resource2->id = 2;
 
+    if (auto u = _userspace.init(); !u)
+        return u;
+
     cpp_printk(CPP_KERN_INFO "[CPP] Initialized\n");
     return {};
 }

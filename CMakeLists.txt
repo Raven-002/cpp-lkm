@@ -47,7 +47,8 @@ add_dependencies(kernel_module check_no_bug)
 enable_testing()
 include(cmake/testing/NegativeCompileTest.cmake)
 
-set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp)
+set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
+              tests/test_userspace_device.cpp)
 # mock_kernel_bridge.cpp provides host-mode kernel API stubs (state + bridge).
 set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
 
