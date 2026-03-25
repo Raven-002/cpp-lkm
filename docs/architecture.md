@@ -44,12 +44,13 @@ exported C functions, mapped to `extern "C"` wrappers.
 
 **Dual-Implementation Symmetry:**
 
-- `src/linux_bridge.c` — The real bridge compiled by Kbuild. It forwards
+- `src/runtime/src/linux_bridge.c` — The real bridge compiled by Kbuild. It forwards
   `cpp_kmalloc` to the real Linux `kmalloc`, `cpp_printk` to `vprintk`, etc.
-- `tests/mock_kernel_bridge.cpp` — The host-mode counterpart. It forwards
+- `tests/support/mock_kernel_bridge.cpp` — The host-mode counterpart. It forwards
   `cpp_kmalloc` to `malloc()` (with fail-injection capabilities),
   `cpp_printk` to `printf()`, etc.
 
-When a new kernel API feature is needed, it is declared in `mock_kernel/linux/`
-headers, implemented once for real in `linux_bridge.c`, and once for the test
-harness in `mock_kernel_bridge.cpp`.
+When a new kernel API feature is needed, declare it in
+`src/runtime/include/cpp_lkm/runtime/kernel_api.h`, implement it once for real
+in `src/runtime/src/linux_bridge.c`, and once for host tests in
+`tests/support/mock_kernel_bridge.cpp`.

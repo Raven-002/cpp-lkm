@@ -50,13 +50,18 @@ ctest --test-dir build-platform -V
 ### 3. CI Mode
 
 Identical to platform mode but acts as a mandatory test gate before release.
+Current CI jobs validate compile/tests with `BUILD_KO=OFF`; they do not perform
+kernel module load smoke tests.
 
 ## Directory Structure
 
 - `compat/`: Freestanding compatibility shims (`new_shim.hpp`).
-- `mock_kernel/`: Mock Linux kernel headers for host-side compilation and testing.
-- `include/`: Core module headers (`kalloc.hpp`, `module.hpp`, `error.hpp`).
-- `src/`: Core implementation (`module.cpp`, `operator_new.cpp`, `bridge.cpp`).
+- `mock_kernel/`: Reserved placeholder for future in-repo mock headers. Current
+  host mocks are in `tests/support/`.
+- `src/`: Core implementation under `src/common/`, `src/runtime/`, and
+  `src/module/`.
+- `third_party/`: Reserved placeholder for vendored dependencies (currently
+  unused).
 - `tests/`: 3 host test executables (init/allocator/compat) plus negative
   compile/link tests.
 

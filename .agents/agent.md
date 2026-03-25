@@ -1,5 +1,9 @@
 # cpp-lkm Developer Guidelines
 
+Normative authority for project policy is `docs/requirements.md`. This file is
+an operational summary for contributors/agents. If guidance conflicts, follow
+`docs/requirements.md` and then synchronize this summary.
+
 ## Architecture & Mocking
 
 This repository is a C++23 kernel module framework targeting a freestanding

@@ -1,25 +1,34 @@
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "compat/new_shim.hpp"
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/module/module.hpp"
+#include "cpp_lkm/runtime/kernel_api.h"
 
 namespace std {
-    [[noreturn]] void __glibcxx_assert_fail(const char* file, int line, const char* function, const char* condition) {
+    void __glibcxx_assert_fail(const char* file, int line, const char* function, const char* condition) noexcept {
         cpp_printk(CPP_KERN_ERR "[CPP] ASSERTION FAILED: %s:%d in %s: %s\n", file, line, function, condition);
         while (true) {} // Halting execution without calling the bug macro
     }
-}
+} // namespace std
 
 #include "cpp_lkm/runtime/module_entry.h"
 
 extern "C"
 {
 
-    alignas(CppKernelModule) static unsigned char g_module_buf[sizeof(CppKernelModule)];
+    struct alignas(CppKernelModule) ModuleStorage
+    {
+        unsigned char bytes[sizeof(CppKernelModule)];
+    };
+    static ModuleStorage g_module_storage;
     static CppKernelModule* g_module = nullptr;
+    static_assert(sizeof(ModuleStorage) >= sizeof(CppKernelModule),
+                  "ModuleStorage size must satisfy module size");
+    static_assert(alignof(ModuleStorage) >= alignof(CppKernelModule),
+                  "ModuleStorage alignment must satisfy module alignment");
 
     int cpp_module_init(void)
     {
-        g_module = new (g_module_buf) CppKernelModule{};
+        g_module = new (&g_module_storage) CppKernelModule{};
         auto res = g_module->init();
         if (!res)
         {

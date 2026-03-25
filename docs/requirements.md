@@ -2,6 +2,10 @@
 
 ## Revision 4 — Panic-Free Allocation & Typed Allocator Pattern
 
+This document is the normative project policy/specification reference.
+`.agents/agent.md` is a condensed operational summary and must stay aligned
+with this file.
+
 ## 1. Project Overview
 
 A C++23 kernel module framework targeting a freestanding environment. It uses
@@ -501,7 +505,12 @@ add_dependencies(kernel_module check_no_bug)
 
 ---
 
-## 8. Mock Headers (`mock_kernel/`)
+## 8. Mock Interfaces (current implementation notes)
+
+Current implementation note: host-mode bridge mocks live in
+`tests/support/mock_kernel_bridge.cpp` and `tests/support/mock_globals.hpp`.
+The `mock_kernel/` directory is currently a placeholder and not the active
+source of mock symbols in this revision.
 
 ### 8.1 `linux/kernel.h`
 
@@ -664,6 +673,9 @@ ctest --test-dir build-ci --output-on-failure
 ---
 
 ## 10. Directory Structure
+
+Note: the tree below is illustrative for architectural intent. Always verify
+current source locations against the repository root and CMake targets.
 
 ```text
 project/

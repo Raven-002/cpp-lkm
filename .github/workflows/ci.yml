@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   host:
@@ -17,6 +18,7 @@ jobs:
           sudo apt-get install -y cmake clang-format clang-tidy g++
 
       - name: Configure (host)
+        # CI scope: host tests run with BUILD_KO=OFF (no kernel module smoke/load).
         run: cmake -B build -DBUILD_MODE=host -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
       - name: Build
@@ -58,6 +60,7 @@ jobs:
           apt-get install -y cmake make
 
       - name: Configure (platform)
+        # CI scope: platform compile/tests only with BUILD_KO=OFF.
         run: cmake -B build-platform -DBUILD_MODE=platform -DBUILD_KO=OFF -DCMAKE_CXX_COMPILER=g++
 
       - name: Build (platform)
@@ -65,3 +68,21 @@ jobs:
 
       - name: Test (platform)
         run: ctest --test-dir build-platform -V
+
+  ko-build-manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake make g++ linux-headers-$(uname -r)
+
+      - name: Configure (.ko enabled)
+        run: cmake -B build-ko -DBUILD_MODE=host -DBUILD_KO=ON
+
+      - name: Build .ko
+        run: cmake --build build-ko -j

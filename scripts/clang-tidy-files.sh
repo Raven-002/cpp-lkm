@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Print clang-tidy target files (space-separated), excluding negative tests.
+# Print clang-tidy target files, excluding negative tests.
+# Negative tests are intentionally invalid (compile/link failure fixtures), so
+# linting them would create noise and false failures.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
