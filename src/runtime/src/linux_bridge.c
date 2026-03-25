@@ -8,7 +8,7 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>
-#include <stdarg.h>
+#include <linux/stdarg.h>
 
 /* Forward declarations to satisfy -Wmissing-prototypes */
 int cpp_printk(const char *fmt, ...);

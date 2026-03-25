@@ -1,6 +1,6 @@
 # cpp-lkm task runner
 #
-# Usage:
+# Quick usage:
 #   just --list
 #   just build
 #   just test
@@ -13,16 +13,16 @@ set ignore-comments := true
 set positional-arguments := true
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
+# ------ Build Configuration ------
 BUILD_DIR := "build"
-# Kernel module (.ko) build tree — separate from host tests so CMake reconfigure does not flip BUILD_KO.
+# Kernel module (.ko) build tree. Keep this separate from host tests so CMake
+# reconfigure does not flip BUILD_KO unexpectedly.
 KO_BUILD_DIR := "build-ko"
 BUILD_MODE := "host"
-
-# Build the real .ko via Kbuild (default off in host mode in CMake)
-BUILD_KO := "OFF"
-
+BUILD_KO := "OFF" # Build the real .ko via Kbuild (default off in host mode)
 KBUILD_DIR := ""
 
+# ------ Core Targets ------
 default:
   @just --list
 
@@ -42,7 +42,7 @@ build: configure
 test: build
   ctest --test-dir "{{BUILD_DIR}}" -V
 
-# --- QA: format checks (read-only) ---
+# ------ QA: Format Checks (Read-Only) ------
 qa-format: qa-format-cpp qa-format-cmake
 
 qa-format-cpp: configure
@@ -51,7 +51,7 @@ qa-format-cpp: configure
 qa-format-cmake:
   scripts/cmake-format-check.sh
 
-# --- QA: lint checks ---
+# ------ QA: Lint Checks ------
 qa-lint: qa-lint-cpp qa-lint-markdown
   - just qa-lint-cmake
 
@@ -65,14 +65,14 @@ qa-lint-cpp:
 qa-lint-markdown:
   (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 "docs/**/*.md" "README.md"
 
-# CMake lint (optional; skip if cmake-lint not installed)
+# CMake lint is optional (script skips if cmake-lint is unavailable).
 qa-lint-cmake:
   scripts/cmake-lint.sh
 
-# --- QA: run all checks ---
+# ------ QA: Run All Checks ------
 qa: qa-format qa-lint
 
-# --- QA fix: auto-fix (apply formatters / fixers) ---
+# ------ QA: Auto-Fix Targets ------
 qa-fix: qa-fix-format qa-fix-lint
 
 qa-fix-format: qa-fix-format-cpp qa-fix-format-cmake
@@ -87,22 +87,22 @@ qa-fix-lint: qa-fix-lint-cpp
   - just qa-fix-lint-markdown
   - just qa-fix-lint-cmake
 
-# C++ lint "fix" = format (clang-tidy has limited fixes)
+# C++ lint "fix" = format (clang-tidy has limited fixes).
 qa-fix-lint-cpp: qa-fix-format-cpp
 
 qa-fix-lint-markdown:
   (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 --fix "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 --fix "docs/**/*.md" "README.md"
 
-# CMake lint fix = cmake-format -i
+# CMake lint fix = cmake-format -i.
 qa-fix-lint-cmake:
   scripts/cmake-format-fix.sh
 
-# --- Kernel smoke testing ---
+# ------ Kernel Smoke Testing ------
 #
-# Builds the .ko (BUILD_KO=ON), then insmod, dmesg, rmmod. Requires: sudo, kernel-devel,
-# and SecureBoot policies permitting module loading.
+# Builds the .ko (BUILD_KO=ON), then insmod, dmesg, and rmmod.
+# Requires sudo, kernel-devel, and SecureBoot policies permitting module load.
 #
-# Override KBUILD_DIR, KO_BUILD_DIR, or BUILD_MODE as needed:
+# Useful overrides:
 #   just KO_BUILD_DIR=build-ko-custom smoke
 #   just KBUILD_DIR=/path/to/kernel/build smoke
 
@@ -125,7 +125,7 @@ smoke: ko
   echo "== dmesg (since ${since_sec}s ago, filtered) ==" && \
   sudo dmesg --color=never -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p'
 
-# Attempts to remove the module if it is loaded (useful after a failed smoke run).
+# Attempts to remove the module if it is loaded (useful after failed smoke).
 smoke-clean:
   name="cpp_lkm" && \
   if lsmod | awk '{print $1}' | grep -qx "$name"; then sudo rmmod "$name"; else echo "$name not loaded"; fi
