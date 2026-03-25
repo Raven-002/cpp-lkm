@@ -135,7 +135,7 @@ void test_gfp_priority_with_multiple_signals()
     kfree_obj(*p);
 }
 
-int main()
+extern "C" int main()
 {
     test_kalloc_success();
     test_kalloc_atomic();

@@ -1,4 +1,5 @@
 #include "cpp_lkm/runtime/kernel_api.h"
+
 #include <stddef.h>
 
 // Heap-form operator new is intentionally NOT defined.

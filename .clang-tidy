@@ -63,5 +63,6 @@ Checks: >
   -clang-analyzer-cplusplus.NewDeleteLeaks,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic
 WarningsAsErrors: '*'
-HeaderFilterRegex: '^(include|src|tests|compat|mock_kernel)/'
+# Match project paths from compile_commands (often absolute) and relative invocations.
+HeaderFilterRegex: '(^|/)((include|src|tests|compat|mock_kernel)/)'
 FormatStyle: file

@@ -32,7 +32,7 @@ void test_expected_monadic()
     printf("test_expected_monadic passed\n");
 }
 
-int main()
+extern "C" int main()
 {
     test_expected_value();
     test_expected_error();

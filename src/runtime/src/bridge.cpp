@@ -3,11 +3,17 @@
 #include "cpp_lkm/module/module.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
-namespace std {
-    void __glibcxx_assert_fail(const char* file, int line, const char* function, const char* condition) noexcept {
-        cpp_printk(CPP_KERN_ERR "[CPP] ASSERTION FAILED: %s:%d in %s: %s\n", file, line, function, condition);
-        while (true) {} // Halting execution without calling the bug macro
-    }
+namespace std
+{
+void __glibcxx_assert_fail(const char* file, int line, const char* function,
+                           const char* condition) noexcept
+{
+    cpp_printk(CPP_KERN_ERR "[CPP] ASSERTION FAILED: %s:%d in %s: %s\n", file, line, function,
+               condition);
+    while (true)
+    {
+    } // Halting execution without calling the bug macro
+}
 } // namespace std
 
 #include "cpp_lkm/runtime/module_entry.h"

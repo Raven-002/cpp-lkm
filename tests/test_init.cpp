@@ -70,7 +70,7 @@ void test_errno_mapping()
     assert(to_errno(ErrorCode::AllocFail) == -12);
 }
 
-int main()
+extern "C" int main()
 {
     test_happy_path();
     test_alloc_fail_in_init();

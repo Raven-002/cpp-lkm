@@ -12,7 +12,8 @@
 // Must never be called with a size of zero.
 [[nodiscard]] inline cpp_gfp_t current_gfp_flags() noexcept
 {
-    return (cpp_in_atomic() || cpp_irqs_disabled() || cpp_in_nmi()) ? CPP_GFP_ATOMIC : CPP_GFP_KERNEL;
+    return (cpp_in_atomic() || cpp_irqs_disabled() || cpp_in_nmi()) ? CPP_GFP_ATOMIC
+                                                                    : CPP_GFP_KERNEL;
 }
 
 [[nodiscard]] inline std::expected<void*, ErrorCode> kmalloc_or_error(size_t bytes) noexcept

@@ -5,7 +5,7 @@
     return 1;
 }
 
-int main()
+extern "C" int main()
 {
     returns_expected(); // Warning turns to error: ignoring return value of function declared with
                         // 'nodiscard' attribute

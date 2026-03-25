@@ -14,6 +14,8 @@ set positional-arguments := true
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 BUILD_DIR := "build"
+# Kernel module (.ko) build tree — separate from host tests so CMake reconfigure does not flip BUILD_KO.
+KO_BUILD_DIR := "build-ko"
 BUILD_MODE := "host"
 
 # Build the real .ko via Kbuild (default off in host mode in CMake)
@@ -25,7 +27,7 @@ default:
   @just --list
 
 clean:
-  rm -rf "{{BUILD_DIR}}"
+  rm -rf "{{BUILD_DIR}}" "{{KO_BUILD_DIR}}"
 
 configure:
   if [[ -n "{{KBUILD_DIR}}" ]]; then \
@@ -100,15 +102,15 @@ qa-fix-lint-cmake:
 # Builds the .ko (BUILD_KO=ON), then insmod, dmesg, rmmod. Requires: sudo, kernel-devel,
 # and SecureBoot policies permitting module loading.
 #
-# Override KBUILD_DIR, BUILD_DIR, or BUILD_MODE as needed:
-#   just BUILD_DIR=build-ko smoke
+# Override KBUILD_DIR, KO_BUILD_DIR, or BUILD_MODE as needed:
+#   just KO_BUILD_DIR=build-ko-custom smoke
 #   just KBUILD_DIR=/path/to/kernel/build smoke
 
 ko:
-  just BUILD_KO=ON BUILD_DIR="{{BUILD_DIR}}" BUILD_MODE="{{BUILD_MODE}}" KBUILD_DIR="{{KBUILD_DIR}}" build
+  just BUILD_KO=ON BUILD_DIR="{{KO_BUILD_DIR}}" BUILD_MODE="{{BUILD_MODE}}" KBUILD_DIR="{{KBUILD_DIR}}" build
 
 smoke: ko
-  ko_path="{{BUILD_DIR}}/cpp_lkm.ko" && \
+  ko_path="{{KO_BUILD_DIR}}/cpp_lkm.ko" && \
   if [[ ! -f "$ko_path" ]]; then echo "Missing $ko_path. Build failed?"; exit 1; fi && \
   name="cpp_lkm" && \
   before_epoch=$(date +%s) && \

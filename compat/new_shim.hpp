@@ -12,7 +12,7 @@
 #include <stddef.h>
 
 #if __has_include(<new>)
-#include <new>
+#include <new> // IWYU pragma: keep
 #else
 inline void* operator new(size_t, void* p) noexcept
 {
