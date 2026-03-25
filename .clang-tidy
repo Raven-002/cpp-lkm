@@ -64,5 +64,5 @@ Checks: >
   -cppcoreguidelines-pro-bounds-pointer-arithmetic
 WarningsAsErrors: '*'
 # Match project paths from compile_commands (often absolute) and relative invocations.
-HeaderFilterRegex: '(^|/)((include|src|tests|compat|mock_kernel)/)'
+HeaderFilterRegex: '(^|/)((include|src|tests|compat)/)'
 FormatStyle: file

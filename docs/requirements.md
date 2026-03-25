@@ -509,8 +509,6 @@ add_dependencies(kernel_module check_no_bug)
 
 Current implementation note: host-mode bridge mocks live in
 `tests/support/mock_kernel_bridge.cpp` and `tests/support/mock_globals.hpp`.
-The `mock_kernel/` directory is currently a placeholder and not the active
-source of mock symbols in this revision.
 
 ### 8.1 `linux/kernel.h`
 
@@ -697,13 +695,10 @@ project/
 │   ├── module.cpp                    # CppKernelModule implementation
 │   ├── operator_new.cpp          # operator delete only; operator new absent
 │   └── bridge.cpp                    # extern "C" entry points
-├── mock_kernel/
-│   └── linux/
-│       ├── kernel.h                  # printk, kmalloc, kfree, BUG (mock)
-│       ├── preempt.h             # in_atomic, irqs_disabled, in_nmi
-│       ├── module.h                  # module_init/exit macros
-│       └── errno.h                   # ENOMEM, EIO, EINVAL
 └── tests/
+    ├── support/
+    │   ├── mock_kernel_bridge.cpp    # host-mode kernel API stubs
+    │   └── mock_globals.hpp
     ├── test_init.cpp
     ├── test_allocator.cpp
     └── test_compat.cpp

@@ -56,12 +56,8 @@ kernel module load smoke tests.
 ## Directory Structure
 
 - `compat/`: Freestanding compatibility shims (`new_shim.hpp`).
-- `mock_kernel/`: Reserved placeholder for future in-repo mock headers. Current
-  host mocks are in `tests/support/`.
 - `src/`: Core implementation under `src/common/`, `src/runtime/`, and
   `src/module/`.
-- `third_party/`: Reserved placeholder for vendored dependencies (currently
-  unused).
 - `tests/`: 3 host test executables (init/allocator/compat) plus negative
   compile/link tests.
 
