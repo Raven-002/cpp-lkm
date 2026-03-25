@@ -15,5 +15,7 @@ check_cxx_source_compiles(
 if(HAS_NATIVE_EXPECTED)
     message(STATUS "std::expected: native")
 else()
-    message(STATUS "std::expected: using tl::expected backport")
+    message(FATAL_ERROR "Native std::expected is required. Your toolchain/stdlib does not provide "
+                        "__cpp_lib_expected >= 202202L."
+    )
 endif()

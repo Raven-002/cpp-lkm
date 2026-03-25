@@ -1,14 +1,17 @@
+// tests/test_init.cpp
+// Tests for CppKernelModule two-phase initialization and cleanup.
+#include "error.hpp"
 #include "mock_globals.hpp"
-#include "module.hpp"
 
 #include <assert.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/preempt.h>
 #include <stdio.h>
 
 void test_happy_path()
 {
-    __mock_kmalloc_fail = 0;
+    reset_mock_state();
     int res = cpp_module_init();
     assert(res == 0);
     cpp_module_exit();
@@ -16,36 +19,38 @@ void test_happy_path()
 
 void test_alloc_fail_in_init()
 {
+    reset_mock_state();
     __mock_kmalloc_fail = 1;
     int res = cpp_module_init();
-    assert(res == static_cast<int>(ErrorCode::AllocFail));
-    cpp_module_exit(); // Should be safe
+    assert(res == to_errno(ErrorCode::AllocFail));
+    cpp_module_exit(); // Must be safe even after failed init
 }
 
 void test_partial_init_cleanup()
 {
-    __mock_kmalloc_fail = 0;
-    __mock_kmalloc_fail_after = 2; // fail the 2nd allocation (resource2)
+    reset_mock_state();
+    __mock_kmalloc_fail_after = 2; // Second allocation (resource2) fails
     int res = cpp_module_init();
-    assert(res == static_cast<int>(ErrorCode::AllocFail));
-    // init failed, module instance should have been torn down; exit must be safe
+    assert(res == to_errno(ErrorCode::AllocFail));
+    // Module instance was torn down; exit must still be safe
     cpp_module_exit();
 }
 
 void test_exit_after_failed_init()
 {
+    reset_mock_state();
     __mock_kmalloc_fail = 1;
     cpp_module_init();
-    // g_module is null here, cpp_module_exit should be safe
+    // g_module is null here; cpp_module_exit must be a no-op
     cpp_module_exit();
 }
 
 void test_errno_mapping()
 {
-    assert(static_cast<int>(ErrorCode::None) == 0);
-    assert(static_cast<int>(ErrorCode::AllocFail) == -12);
-    assert(static_cast<int>(ErrorCode::HwHandshake) == -5);
-    assert(static_cast<int>(ErrorCode::BadState) == -22);
+    assert(to_errno(ErrorCode::None) == 0);
+    assert(to_errno(ErrorCode::AllocFail) == -12);
+    assert(to_errno(ErrorCode::HwHandshake) == -5);
+    assert(to_errno(ErrorCode::BadState) == -22);
 }
 
 int main()

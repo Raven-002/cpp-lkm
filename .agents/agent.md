@@ -1,7 +1,7 @@
 # cpp-lkm Developer Guidelines
 
 ## Architecture & Mocking
-This repository is a C++23 kernel module framework targeting a freestanding environment, with a host-side mocked mode for rapid iteration. We use `compat/` to transparently bridge C++23 features (like `<expected>`) for older toolchains (e.g., GCC 12).
+This repository is a C++23 kernel module framework targeting a freestanding environment, with a host-side mocked mode for rapid iteration. The toolchain must provide native `<expected>`; `compat/` remains for freestanding shims (for example, placement new support).
 
 ## Core Rules
 
@@ -10,7 +10,7 @@ This repository is a C++23 kernel module framework targeting a freestanding envi
 3. **No Heap `operator new`**: It is configured as a linker trap. Attempting to use `new T{}` in `src/` or `include/` will fail to link.
 4. **Use `kalloc<T>()`**: All heap allocation goes through `kalloc<T>()` which returns `std::expected<T*>`. Free using `kfree_obj(p)`.
 5. **Fallible Initialization**: Phase 1 initialization (construction) must be trivial and fallible operations belong in the `init()` Phase 2 method.
-6. **No `#ifdef` Noise**: Any compiler/stdlib version detection MUST be localized to the `compat/` directory.
+6. **No `#ifdef` Noise**: Any unavoidable compatibility detection MUST be localized and kept minimal.
 
 ## Testing & Workflows
 - **Host mode**: `cmake -B build -DBUILD_MODE=host`, `cmake --build build`, `ctest --test-dir build`

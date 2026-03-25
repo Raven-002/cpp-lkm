@@ -21,5 +21,5 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
 endif()
 
 set(LIBKERNEL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}
-                           ${CMAKE_SOURCE_DIR}/mock_kernel ${CMAKE_SOURCE_DIR}/third_party
+                           ${CMAKE_SOURCE_DIR}/mock_kernel
 )

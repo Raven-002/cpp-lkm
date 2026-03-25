@@ -48,11 +48,13 @@ enable_testing()
 include(cmake/testing/NegativeCompileTest.cmake)
 
 set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp)
+# mock_kernel_bridge.cpp provides host-mode kernel API stubs (state + bridge).
+set(TEST_MOCK_SRC tests/mock_kernel_bridge.cpp)
 
 if(NOT BUILD_KO)
     foreach(test_src ${TEST_SRCS})
         get_filename_component(test_name ${test_src} NAME_WE)
-        add_executable(${test_name} ${test_src} tests/mock_globals.cpp)
+        add_executable(${test_name} ${test_src} ${TEST_MOCK_SRC})
         target_link_libraries(${test_name} PRIVATE kernel_module)
         target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
         add_test(NAME ${test_name} COMMAND ${test_name})
@@ -73,81 +75,4 @@ if(BUILD_KO)
     add_kbuild_module(cpp_lkm kernel_module ALL)
 endif()
 
-find_program(CLANG_FORMAT_EXE NAMES clang-format)
-if(CLANG_FORMAT_EXE)
-    file(
-        GLOB_RECURSE
-        FORMAT_SOURCES
-        "${CMAKE_SOURCE_DIR}/src/*.cpp"
-        "${CMAKE_SOURCE_DIR}/src/*.h"
-        "${CMAKE_SOURCE_DIR}/src/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*.hpp"
-        "${CMAKE_SOURCE_DIR}/tests/*.cpp"
-        "${CMAKE_SOURCE_DIR}/tests/*.hpp"
-        "${CMAKE_SOURCE_DIR}/compat/*.hpp"
-        "${CMAKE_SOURCE_DIR}/mock_kernel/*.h"
-        "${CMAKE_SOURCE_DIR}/mock_kernel/*/*.h"
-        "${CMAKE_SOURCE_DIR}/mock_kernel/*/*/*.h"
-    )
-
-    add_custom_target(
-        format
-        COMMAND "${CLANG_FORMAT_EXE}" -i ${FORMAT_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        COMMENT "Running clang-format"
-        VERBATIM
-    )
-
-    add_custom_target(
-        format-check
-        COMMAND "${CLANG_FORMAT_EXE}" --dry-run -Werror ${FORMAT_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        COMMENT "Checking clang-format"
-        VERBATIM
-    )
-else()
-    message(STATUS "clang-format not found; format targets disabled")
-endif()
-
-# CMake format and lint (cmakelang: cmake-format, cmake-lint)
-find_program(CMAKE_FORMAT_EXE NAMES cmake-format)
-find_program(CMAKE_LINT_EXE NAMES cmake-lint)
-if(CMAKE_FORMAT_EXE)
-    file(GLOB_RECURSE CMAKE_SOURCES "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
-         "${CMAKE_SOURCE_DIR}/cmake/*.cmake" "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
-    )
-    add_custom_target(
-        cmake-format
-        COMMAND "${CMAKE_FORMAT_EXE}" -i ${CMAKE_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        COMMENT "Running cmake-format"
-        VERBATIM
-    )
-    add_custom_target(
-        cmake-format-check
-        COMMAND "${CMAKE_FORMAT_EXE}" --check ${CMAKE_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        COMMENT "Checking cmake-format"
-        VERBATIM
-    )
-endif()
-if(CMAKE_LINT_EXE)
-    if(NOT CMAKE_FORMAT_EXE)
-        file(GLOB_RECURSE CMAKE_SOURCES "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
-             "${CMAKE_SOURCE_DIR}/cmake/*.cmake" "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
-        )
-    endif()
-    add_custom_target(
-        cmake-lint
-        COMMAND "${CMAKE_LINT_EXE}" ${CMAKE_SOURCES}
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        COMMENT "Running cmake-lint"
-        VERBATIM
-    )
-endif()
-if(NOT CMAKE_FORMAT_EXE)
-    message(STATUS "cmake-format not found; cmake-format targets disabled")
-endif()
-if(NOT CMAKE_LINT_EXE)
-    message(STATUS "cmake-lint not found; cmake-lint target disabled")
-endif()
+include(cmake/cpp/FormatTargets.cmake)

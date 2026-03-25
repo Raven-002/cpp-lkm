@@ -23,8 +23,8 @@ without modification:
 | Mode | Compiler | Purpose |
 | --- | --- | --- |
 | **Host / Dev** | Clang 16+ or GCC 13+ (host) | Fast iteration, unit tests |
-| **Platform / Native** | G++12 (12.x, target arch) | Platform build |
-| **Platform / CI Test** | G++12 (12.x, target arch) | CI gate before release |
+| **Platform / Native** | G++12 (12.5.x, target arch) | Platform build |
+| **Platform / CI Test** | G++12 (12.5.x, target arch) | CI gate |
 
 > **Architecture note:** The target platform architecture is opaque to this spec.
 > The build system must not hardcode any arch-specific flags. Any arch-specific
@@ -33,9 +33,8 @@ without modification:
 
 ### 1.2 Compatibility Philosophy
 
-The project uses **idiomatic C++23 source throughout**, with a thin `compat/`
-header façade that transparently provides missing stdlib types via header-only
-backports when building under G++12.
+The project uses **idiomatic C++23 source throughout**, with minimal
+freestanding compatibility shims in `compat/`.
 
 **No source-level transpilation. No `#ifdef` noise in business logic.**
 
@@ -100,7 +99,7 @@ a typed `std::expected` so failures propagate naturally through the
 ```cpp
 // include/kalloc.hpp
 #pragma once
-#include "compat/expected.hpp"
+#include <expected>
 #include "error.hpp"
 #include <linux/slab.h>   // kmalloc / kfree
 #include <linux/preempt.h>
@@ -218,7 +217,7 @@ add_dependencies(kernel_module check_no_bug)
 ### 3.2 The `CppKernelModule` Class
 
 ```cpp
-#include "compat/expected.hpp"
+#include <expected>
 #include "error.hpp"
 
 class CppKernelModule {
@@ -364,48 +363,12 @@ returns unexpected, the error code is the reason.
 
 ## 6. Compatibility Layer (`compat/`)
 
-### 6.1 `std::expected` on G++12
+### 6.1 Native `<expected>`
 
-`std::expected<T,E>` is a C++23 feature. Its availability in libstdc++ by GCC version:
+`std::expected<T,E>` is required natively from the selected toolchain.
+Configuration must fail if `__cpp_lib_expected < 202202L`.
 
-| Compiler | `<expected>` status |
-| --- | --- |
-| GCC 12.0 | Not present |
-| GCC 12.1–12.3 | Present but incomplete in some builds |
-| GCC 13+ | Complete and stable |
-| Clang 16+ (libc++) | Complete and stable |
-
-**Chosen backport: `tl::expected`** — single-header, MIT licensed,
-freestanding-compatible, API-compatible with the C++23 standard.
-
-### 6.2 `compat/expected.hpp`
-
-The **only** header the codebase includes for `std::expected`. Never include
-`<expected>` or `tl/expected.hpp` directly in business logic.
-
-```cpp
-// compat/expected.hpp
-#pragma once
-
-#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
-#  include <expected>
-#else
-#  include "tl/expected.hpp"
-   namespace std {
-       template<class T, class E>
-       using expected = tl::expected<T, E>;
-       template<class E>
-       using unexpected = tl::unexpected<E>;
-       template<class E>
-       [[nodiscard]] constexpr auto make_unexpected(E&& e)
-           -> tl::unexpected<std::decay_t<E>> {
-           return tl::make_unexpected(std::forward<E>(e));
-       }
-   }
-#endif
-```
-
-### 6.3 `compat/new_shim.hpp`
+### 6.2 `compat/new_shim.hpp`
 
 Placement new only. Must not pull in libc or libstdc++ headers.
 
@@ -417,20 +380,14 @@ inline void* operator new  (size_t, void* p) noexcept { return p; }
 inline void  operator delete(void*, void*)   noexcept {}
 ```
 
-### 6.4 `compat/` Inventory
+### 6.3 `compat/` Inventory
 
-| File | Purpose | Backport if missing |
-| --- | --- | --- |
-| `compat/expected.hpp` | `std::expected<T,E>` | `tl::expected` (vendored) |
-| `compat/new_shim.hpp` | Freestanding placement new | Inline — no external dep |
+| File | Purpose |
+| --- | --- |
+| `compat/new_shim.hpp` | Freestanding placement new |
 
 Policy: `#ifdef` for compiler/stdlib version detection belongs exclusively in
 `compat/`. Never in `src/` or `include/`.
-
-### 6.5 Vendoring
-
-`tl/expected.hpp` must be vendored at `third_party/tl/expected.hpp`. No network
-fetches at build time. Version pinned in `third_party/VERSIONS.txt`.
 
 ---
 
@@ -440,7 +397,7 @@ fetches at build time. Version pinned in `third_party/VERSIONS.txt`.
 
 ```bash
 cmake -DBUILD_MODE=host      # Host compiler, mock headers, runs all tests
-cmake -DBUILD_MODE=platform  # G++12, mock headers, runs all tests
+cmake -DBUILD_MODE=platform  # G++12.5.x, mock headers, runs all tests
 cmake -DBUILD_MODE=ci        # Same as platform; non-zero exit on any failure
 ```
 
@@ -493,7 +450,7 @@ check_cxx_source_compiles("
 if(HAS_NATIVE_EXPECTED)
     message(STATUS "std::expected: native")
 else()
-    message(STATUS "std::expected: using tl::expected backport")
+    message(FATAL_ERROR "Native std::expected is required")
 endif()
 ```
 
@@ -515,9 +472,9 @@ if(BUILD_MODE STREQUAL "platform" OR BUILD_MODE STREQUAL "ci")
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         message(FATAL_ERROR "Platform mode requires GCC")
     endif()
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.0" OR
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.5" OR
        CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "13.0")
-        message(FATAL_ERROR "Platform mode requires GCC 12.x")
+        message(FATAL_ERROR "Platform mode requires GCC 12.5.x")
     endif()
 endif()
 ```
@@ -709,10 +666,13 @@ ctest --test-dir build-ci --output-on-failure
 project/
 ├── CMakeLists.txt
 ├── cmake/
-│   ├── CheckExpected.cmake       # std::expected probe
-│   └── NegativeCompileTest.cmake # Negative compile/link test helpers
+│   ├── cpp/
+│   │   ├── CxxFlags.cmake
+│   │   ├── CheckExpected.cmake       # native std::expected enforcement
+│   │   └── FormatTargets.cmake
+│   └── testing/
+│       └── NegativeCompileTest.cmake # Negative compile/link test helpers
 ├── compat/
-│   ├── expected.hpp                   # std::expected façade (native or tl::)
 │   └── new_shim.hpp                   # Freestanding placement new
 ├── include/
 │   ├── module.hpp                     # CppKernelModule declaration
@@ -728,10 +688,6 @@ project/
 │       ├── preempt.h             # in_atomic, irqs_disabled, in_nmi
 │       ├── module.h                  # module_init/exit macros
 │       └── errno.h                   # ENOMEM, EIO, EINVAL
-├── third_party/
-│   ├── VERSIONS.txt
-│   └── tl/
-│       └── expected.hpp              # Vendored tl::expected
 └── tests/
     ├── test_init.cpp
     ├── test_allocator.cpp
@@ -750,4 +706,3 @@ project/
 | NMI allocator strictness | Partially modeled | GFP_ATOMIC insufficient |
 | `kalloc_array` bounds | Not addressed | Check count*sizeof(T) |
 | GCC 12 -Wno-interference-size | Workaround | Remove at GCC 13 |
-| tl::expected on GCC 12 | Verify | monadic ops under c++23 |

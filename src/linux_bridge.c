@@ -44,7 +44,7 @@ void cpp_assert_fail(const char *expr, const char *file, int line, const char *f
     panic("C++ BUG(): %s at %s:%d %s", expr, file, line, func);
 }
 
-/* Resolve C++ assert() from e.g. tl::expected TL_ASSERT; kernel has no libc __assert_fail */
+/* Resolve C++ assert() calls; kernel has no libc __assert_fail */
 void __assert_fail(const char *assertion, const char *file, int line, const char *function) {
     cpp_assert_fail(assertion, file, line, function);
 }

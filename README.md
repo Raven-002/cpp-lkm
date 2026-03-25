@@ -14,8 +14,8 @@ exceptions/RTTI), and implements a context-aware memory allocator.
 - **Linker Trap for `operator new`**: Heap-form `operator new` is an
   intentional linker trap to prevent accidental raw panicking allocations.
   Use `kalloc<T>()` instead.
-- **Idiomatic C++23**: The codebase is written in idiomatic C++23, using a
-  thin `compat/` layer to polyfill missing `<expected>` support on GCC 12.
+- **Idiomatic C++23**: The codebase is written in idiomatic C++23 and requires
+  native `std::expected` support from the toolchain.
 
 For deeper architectural details, see [docs/architecture.md](docs/architecture.md).
 For the technical requirements specification, see
@@ -38,7 +38,7 @@ ctest --test-dir build -V
 
 ### 2. Platform Mode
 
-Compiles using a GCC 12 cross-compiler targeting the actual platform
+Compiles using a GCC 12.5.x cross-compiler targeting the actual platform
 architecture, but still links against mock headers for CI test validation.
 
 ```bash
@@ -53,13 +53,12 @@ Identical to platform mode but acts as a mandatory test gate before release.
 
 ## Directory Structure
 
-- `compat/`: Polyfills and compiler workarounds (e.g. `tl::expected` for GCC 12).
+- `compat/`: Freestanding compatibility shims (`new_shim.hpp`).
 - `mock_kernel/`: Mock Linux kernel headers for host-side compilation and testing.
 - `include/`: Core module headers (`kalloc.hpp`, `module.hpp`, `error.hpp`).
 - `src/`: Core implementation (`module.cpp`, `operator_new.cpp`, `bridge.cpp`).
 - `tests/`: 3 host test executables (init/allocator/compat) plus negative
   compile/link tests.
-- `third_party/`: Vendored dependencies (`tl::expected`).
 
 ## Building the real `.ko` (Kbuild)
 

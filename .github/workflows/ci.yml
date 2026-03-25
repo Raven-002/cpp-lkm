@@ -30,7 +30,7 @@ jobs:
 
       - name: C++ lint
         run: |
-          files=$(git ls-files 'src/*.cpp' 'include/*.h' 'tests/*.cpp' 'tests/*.h' 'compat/*.h' || true)
+          files=$(git ls-files 'src/*.cpp' 'include/*.hpp' 'tests/*.cpp' 'tests/*.hpp' 'compat/*.hpp' | rg -v 'tests/test_nodiscard\.cpp|tests/test_negative_new\.cpp' | while IFS= read -r f; do [[ -f "$f" ]] && echo "$f"; done || true)
           if [ -n "$files" ]; then clang-tidy -p build $files; fi
 
       - name: CMake format check

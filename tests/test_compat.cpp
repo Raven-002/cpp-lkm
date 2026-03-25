@@ -1,6 +1,5 @@
-#include "compat/expected.hpp"
-
 #include <assert.h>
+#include <expected>
 #include <stdio.h>
 
 void test_expected_value()

@@ -1,3 +1,4 @@
+#include "error.hpp"
 #include "module.hpp"
 
 #include <linux/module.h>
@@ -16,7 +17,7 @@ extern "C"
         {
             g_module->~CppKernelModule();
             g_module = nullptr;
-            return static_cast<int>(res.error());
+            return to_errno(res.error());
         }
         return 0;
     }

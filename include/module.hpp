@@ -1,12 +1,11 @@
 #pragma once
-#include "compat/expected.hpp"
 #include "error.hpp"
 
-// A dummy resource used to demonstrate allocation and cleanup.
-struct TestResource
-{
-    int id = 0;
-};
+#include <expected>
+
+// Forward declaration — full definition lives in test_resource.hpp.
+// module.cpp includes test_resource.hpp for the complete type.
+struct TestResource;
 
 class CppKernelModule
 {
@@ -16,7 +15,6 @@ class CppKernelModule
     ~CppKernelModule();
 
   private:
-    bool _initialized = false;
     TestResource* _resource1 = nullptr;
     TestResource* _resource2 = nullptr;
 };

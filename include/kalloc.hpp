@@ -1,8 +1,8 @@
 #pragma once
-#include "compat/expected.hpp"
 #include "compat/new_shim.hpp"
 #include "error.hpp"
 
+#include <expected>
 #include <linux/preempt.h>
 #include <linux/slab.h>
 
