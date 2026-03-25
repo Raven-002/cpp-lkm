@@ -25,6 +25,26 @@ freestanding shims (for example, placement new support).
 6. **No `#ifdef` Noise**: Any unavoidable compatibility detection must be
    localized and kept minimal.
 
+## Expanding module C++ logic
+
+The **module’s own behavior** (everything beyond runtime/bridge glue) belongs
+under `src/module/`: `include/cpp_lkm/module/` and `src/module/src/`. The
+reference shape is `CppKernelModule` in `module.hpp` / `module.cpp`.
+
+- **Add code**: extend `CppKernelModule` and/or add new `.cpp`/`.hpp` files next
+  to the existing module sources for cohesive subsystems.
+- **Wire the build**: register every new translation unit in
+  `src/module/CMakeLists.txt` (`add_library(module_core OBJECT ...)`) and list
+  new public headers in that target’s `FILE_SET HEADERS` `target_sources`.
+- **Lifecycle**: trivial constructor (Phase 1); allocations and other fallible
+  work in `init()` returning `Result<void>`; teardown in the destructor (use
+  `kalloc` / `kfree_obj`, not `new`).
+- **Kernel calls**: go through the C bridge (`kernel_api.h` and the real vs.
+  mock implementations)—same pattern as in `docs/architecture.md`.
+- **Entry glue**: `src/runtime/src/bridge.cpp` placement-news `CppKernelModule`
+  and drives `init()`/destruction; touch it only if global lifetime or the
+  exported C entry points must change.
+
 ## Testing & Workflows
 
 - **Host mode**: `cmake -B build -DBUILD_MODE=host`, `cmake --build build`,

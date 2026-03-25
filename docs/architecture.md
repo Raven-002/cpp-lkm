@@ -11,6 +11,35 @@ The module uses a strictly defined two-phase initialization pattern:
    fallible and may allocate internal resources,
    and returns `std::expected<void, ErrorCode>`. Any failures must be handled gracefully.
 
+## Extending the module implementation (`src/module/`)
+
+The **C++ logic of the loadable module**—what the module actually does beyond
+runtime and bridge code—lives under `src/module/`. The canonical class is
+`CppKernelModule` (`include/cpp_lkm/module/module.hpp`,
+`src/module/src/module.cpp`).
+
+**How to grow it:**
+
+1. **Types and files**: Add members, private helpers, and nested types on
+   `CppKernelModule`, or split cohesive subsystems into additional `.hpp`/`.cpp`
+   files under `src/module/include/cpp_lkm/module/` and `src/module/src/`.
+2. **Build system**: For each new `.cpp`, add it to the `OBJECT` library in
+   `src/module/CMakeLists.txt`. Add new public headers to the `module_core`
+   `FILE_SET HEADERS` in the same file so tooling and consumers see them
+   consistently.
+3. **Initialization contract**: Keep Phase 1 construction trivial (no
+   allocation); put fallible setup in `init()`; free everything in the
+   destructor. Use `kalloc<T>()` / `kfree_obj()` for heap data (see below).
+4. **Kernel surface**: Do not call Linux internals directly from C++ module code.
+   Declare needed operations in `src/runtime/include/cpp_lkm/runtime/kernel_api.h`
+   and implement them in `linux_bridge.c` and `tests/support/mock_kernel_bridge.cpp`
+   as described in [The C/C++ Kernel Bridge](#the-cc-kernel-bridge).
+5. **Lifecycle glue**: `src/runtime/src/bridge.cpp` allocates storage for
+   `CppKernelModule`, placement-news it, calls `init()`, and destroys it on
+   unload. Change that file only if the global instance shape or the exported
+   `extern "C"` entry points (`module_entry.h`) need to change—not for ordinary
+   feature work inside the class.
+
 ## Context-Aware Allocator (`kalloc`)
 
 Standard `new` is disabled (see Linker Trap section). All dynamic memory
