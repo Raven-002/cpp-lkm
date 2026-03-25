@@ -8,14 +8,9 @@ set(BUILD_MODE
     "host"
     CACHE STRING "Build mode: host, platform, ci"
 )
-include(CMakeDependentOption)
-cmake_dependent_option(
-    BUILD_KO
-    "Build the real .ko via Kbuild"
-    ON
-    "NOT BUILD_MODE STREQUAL \"host\""
-    OFF
-)
+# Default OFF so host test builds do not require kernel-devel. Explicit -DBUILD_KO=ON
+# (e.g. just ko, build-ko/) enables Kbuild regardless of BUILD_MODE.
+option(BUILD_KO "Build the real .ko via Kbuild" OFF)
 
 include(cmake/kernel/ToolchainCheck.cmake)
 include(cmake/cpp/CxxFlags.cmake)
