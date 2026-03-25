@@ -5,7 +5,10 @@ endif()
 if(DEFINED KBUILD_DIR AND NOT "${KBUILD_DIR}" STREQUAL "")
     set(CPP_LKM_KERNEL_BUILD_DIR "${KBUILD_DIR}")
     if(CMAKE_CURRENT_FUNCTION)
-        set(CPP_LKM_KERNEL_BUILD_DIR "${KBUILD_DIR}" PARENT_SCOPE)
+        set(CPP_LKM_KERNEL_BUILD_DIR
+            "${KBUILD_DIR}"
+            PARENT_SCOPE
+        )
     endif()
     return()
 endif()
@@ -17,5 +20,8 @@ execute_process(
 )
 set(CPP_LKM_KERNEL_BUILD_DIR "/lib/modules/${CPP_LKM_KERNEL_RELEASE}/build")
 if(CMAKE_CURRENT_FUNCTION)
-    set(CPP_LKM_KERNEL_BUILD_DIR "/lib/modules/${CPP_LKM_KERNEL_RELEASE}/build" PARENT_SCOPE)
+    set(CPP_LKM_KERNEL_BUILD_DIR
+        "/lib/modules/${CPP_LKM_KERNEL_RELEASE}/build"
+        PARENT_SCOPE
+    )
 endif()

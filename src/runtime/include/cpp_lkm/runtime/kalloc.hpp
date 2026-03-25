@@ -27,8 +27,7 @@
 // Allocate memory for one T, construct it with args, and return a pointer.
 // Returns ErrorCode::AllocFail if kmalloc returns null.
 // The caller owns the returned pointer and must free it with kfree_obj<T>().
-template <typename T, typename... Args>
-[[nodiscard]] Result<T*> kalloc(Args&&... args) noexcept
+template <typename T, typename... Args> [[nodiscard]] Result<T*> kalloc(Args&&... args) noexcept
 {
     auto mem = kmalloc_or_error(sizeof(T));
     if (!mem)

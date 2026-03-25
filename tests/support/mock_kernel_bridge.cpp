@@ -103,7 +103,7 @@ extern "C"
     }
 
     int cpp_userspace_chardev_register(const char* name, unsigned int mode, void* ctx,
-                                        cpp_chardev_read_cb read_cb, cpp_chardev_write_cb write_cb)
+                                       cpp_chardev_read_cb read_cb, cpp_chardev_write_cb write_cb)
     {
         (void)name;
         (void)mode;

@@ -5,7 +5,7 @@
 enum class ErrorCode : int
 {
     None = 0,
-    AllocFail = -12, // -ENOMEM
+    AllocFail = -12,     // -ENOMEM
     CharDevRegFail = -5, // -EIO (generic registration failure; see bridge return values)
 };
 
@@ -15,5 +15,4 @@ enum class ErrorCode : int
     return static_cast<int>(e);
 }
 
-template <typename T>
-using Result = std::expected<T, ErrorCode>;
+template <typename T> using Result = std::expected<T, ErrorCode>;

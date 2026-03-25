@@ -8,8 +8,8 @@ set(BUILD_MODE
     "host"
     CACHE STRING "Build mode: host, platform, ci"
 )
-# Default OFF so host test builds do not require kernel-devel. Explicit -DBUILD_KO=ON
-# (e.g. just ko, build-ko/) enables Kbuild regardless of BUILD_MODE.
+# Default OFF so host test builds do not require kernel-devel. Explicit -DBUILD_KO=ON (e.g. just ko,
+# build-ko/) enables Kbuild regardless of BUILD_MODE.
 option(BUILD_KO "Build the real .ko via Kbuild" OFF)
 
 include(cmake/kernel/ToolchainCheck.cmake)
@@ -29,11 +29,7 @@ add_subdirectory(src/common)
 add_subdirectory(src/runtime)
 add_subdirectory(src/module)
 
-add_library(
-    kernel_module STATIC
-    $<TARGET_OBJECTS:kernel_runtime>
-    $<TARGET_OBJECTS:module_core>
-)
+add_library(kernel_module STATIC $<TARGET_OBJECTS:kernel_runtime> $<TARGET_OBJECTS:module_core>)
 target_link_libraries(kernel_module PUBLIC libkernel kernel_runtime module_core)
 
 add_custom_target(
@@ -48,7 +44,8 @@ enable_testing()
 include(cmake/testing/NegativeCompileTest.cmake)
 
 set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
-              tests/test_userspace_device.cpp)
+              tests/test_userspace_device.cpp
+)
 # mock_kernel_bridge.cpp provides host-mode kernel API stubs (state + bridge).
 set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
 

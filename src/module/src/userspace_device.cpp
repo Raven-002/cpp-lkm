@@ -10,7 +10,7 @@ constexpr const char k_default_status[] = "cpp_lkm ok\n";
 extern "C"
 {
     static cpp_ssize_t userspace_read_trampoline(void* ctx, void* kbuf, size_t len,
-                                                  std::int64_t* pos)
+                                                 std::int64_t* pos)
     {
         return static_cast<UserspaceDevice*>(ctx)->read_kernel(kbuf, len, pos);
     }
