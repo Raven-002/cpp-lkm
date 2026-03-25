@@ -31,7 +31,7 @@ function(add_kbuild_module TARGET_NAME CPP_LIB_TARGET)
     set(MOD_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/kbuild_${TARGET_NAME}")
     file(MAKE_DIRECTORY "${MOD_BUILD_DIR}")
 
-    set(BRIDGE_SRC "${CMAKE_SOURCE_DIR}/src/runtime/linux_bridge.c")
+    set(BRIDGE_SRC "${CMAKE_SOURCE_DIR}/src/runtime/src/linux_bridge.c")
     set(LIB_NAME "libkernel_module.a")
 
     string(CONCAT KBUILD_MAKEFILE_CONTENT "obj-m += ${TARGET_NAME}.o\n"

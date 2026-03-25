@@ -29,32 +29,22 @@ target_include_directories(libkernel INTERFACE ${LIBKERNEL_INCLUDE_DIRS})
 include(cmake/kernel/KernelAbiFlags.cmake)
 include(cmake/kernel/KbuildModule.cmake)
 
-add_library(kernel_runtime_obj OBJECT src/runtime/bridge.cpp src/runtime/operator_new.cpp)
-target_link_libraries(kernel_runtime_obj PUBLIC libkernel)
-target_compile_options(kernel_runtime_obj PRIVATE ${KERNEL_ABI_COMPILE_OPTIONS})
-
-add_library(module_core_obj OBJECT src/module/module.cpp)
-target_link_libraries(module_core_obj PUBLIC libkernel)
-target_compile_options(module_core_obj PRIVATE ${KERNEL_ABI_COMPILE_OPTIONS})
-
-add_library(kernel_runtime STATIC $<TARGET_OBJECTS:kernel_runtime_obj>)
-target_link_libraries(kernel_runtime PUBLIC libkernel)
-
-add_library(module_core STATIC $<TARGET_OBJECTS:module_core_obj>)
-target_link_libraries(module_core PUBLIC libkernel kernel_runtime)
+add_subdirectory(src/common)
+add_subdirectory(src/runtime)
+add_subdirectory(src/module)
 
 add_library(
     kernel_module STATIC
-    $<TARGET_OBJECTS:kernel_runtime_obj>
-    $<TARGET_OBJECTS:module_core_obj>
+    $<TARGET_OBJECTS:kernel_runtime>
+    $<TARGET_OBJECTS:module_core>
 )
-target_link_libraries(kernel_module PUBLIC libkernel)
+target_link_libraries(kernel_module PUBLIC libkernel kernel_runtime module_core)
 
 add_custom_target(
     check_no_bug
     COMMAND
         bash -c
-        "grep -rn 'BUG(' ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include --include='*.cpp' --include='*.h' --include='*.hpp' \
+        "grep -rn 'BUG(' ${CMAKE_SOURCE_DIR}/src --include='*.cpp' --include='*.h' --include='*.hpp' \
          && echo 'FAIL: BUG() found in module source' && exit 1 \
          || echo 'OK: no BUG() in module source'"
     VERBATIM

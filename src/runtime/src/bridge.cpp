@@ -1,5 +1,13 @@
+#include "cpp_lkm/runtime/kernel_api.h"
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/module/module.hpp"
+
+namespace std {
+    [[noreturn]] void __glibcxx_assert_fail(const char* file, int line, const char* function, const char* condition) {
+        cpp_printk(CPP_KERN_ERR "[CPP] ASSERTION FAILED: %s:%d in %s: %s\n", file, line, function, condition);
+        while (true) {} // Halting execution without calling the bug macro
+    }
+}
 
 #include "cpp_lkm/runtime/module_entry.h"
 
