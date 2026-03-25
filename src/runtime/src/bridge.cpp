@@ -26,8 +26,10 @@ struct alignas(CppKernelModule) ModuleStorage
 {
     std::array<unsigned char, sizeof(CppKernelModule)> bytes{};
 };
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 ModuleStorage g_module_storage{};
 CppKernelModule* g_module = nullptr;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 static_assert(sizeof(ModuleStorage::bytes) >= sizeof(CppKernelModule),
               "ModuleStorage size must satisfy module size");

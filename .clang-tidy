@@ -46,16 +46,6 @@ Checks:
   # Ownership: expressed via std::expected + placement new.
   - '-cppcoreguidelines-owning-memory'
 
-  # Array decay: va_list/va_start macro expansion false positives in mocks.
-  - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
-  - '-hicpp-no-array-decay'
-
-  # API: kmalloc signature uses intentionally similar integral types.
-  - '-bugprone-easily-swappable-parameters'
-
-  # Globals: mutable module/mocks are intentional in bridge tests.
-  - '-cppcoreguidelines-avoid-non-const-global-variables'
-
   # Anonymous namespace: conflicts with llvm-prefer-static-over-anonymous-namespace.
   - '-misc-use-anonymous-namespace'
 WarningsAsErrors: '*'
