@@ -22,7 +22,7 @@ extern "C"
     }
 } // extern "C"
 
-cpp_ssize_t UserspaceDevice::read_kernel(void* kbuf, size_t len, std::int64_t* pos)
+cpp_ssize_t UserspaceDevice::read_kernel(void* kbuf, size_t len, const std::int64_t* pos)
 {
     (void)pos;
     if (_write_len > 0)
@@ -37,7 +37,7 @@ cpp_ssize_t UserspaceDevice::read_kernel(void* kbuf, size_t len, std::int64_t* p
     return static_cast<cpp_ssize_t>(n);
 }
 
-cpp_ssize_t UserspaceDevice::write_kernel(const void* kbuf, size_t len, std::int64_t* pos)
+cpp_ssize_t UserspaceDevice::write_kernel(const void* kbuf, size_t len, const std::int64_t* pos)
 {
     (void)pos;
     if (len == 0)
@@ -45,7 +45,7 @@ cpp_ssize_t UserspaceDevice::write_kernel(const void* kbuf, size_t len, std::int
     const size_t cap = k_buf_size - 1U;
     const size_t n = len < cap ? len : cap;
     memcpy(_write_buf, kbuf, n);
-    _write_buf[n] = '\0';
+    *(_write_buf + n) = '\0';
     _write_len = n;
     return static_cast<cpp_ssize_t>(n);
 }

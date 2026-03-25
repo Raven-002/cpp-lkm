@@ -21,8 +21,8 @@ class UserspaceDevice
     ~UserspaceDevice();
 
     // Bridge callbacks (C linkage); not for general use.
-    [[nodiscard]] cpp_ssize_t read_kernel(void* kbuf, size_t len, std::int64_t* pos);
-    [[nodiscard]] cpp_ssize_t write_kernel(const void* kbuf, size_t len, std::int64_t* pos);
+    [[nodiscard]] cpp_ssize_t read_kernel(void* kbuf, size_t len, const std::int64_t* pos);
+    [[nodiscard]] cpp_ssize_t write_kernel(const void* kbuf, size_t len, const std::int64_t* pos);
 
   private:
     static constexpr size_t k_buf_size = 256;
