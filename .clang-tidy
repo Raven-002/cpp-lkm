@@ -1,67 +1,63 @@
-# Strict: enable all checks, disable only irrelevant (platform/domain-specific).
-# Disabled: altera, android, darwin, fuchsia/zircon, objc, llvmlibc; readability-magic-numbers.
-# Also disabled: checks that don't apply to kernel/compat/C-interop (see comments).
-Checks: >
-  *,
-  -readability-magic-numbers,
-  -altera-*,
-  -android-*,
-  -darwin-*,
-  -fuchsia-*,
-  -zircon-*,
-  -objc-*,
-  -google-objc-*,
-  -llvmlibc-*,
-  -cert-dcl58-cpp,
-  -cert-dcl54-cpp,
-  -cert-dcl37-c,
-  -cert-dcl51-cpp,
-  -llvm-header-guard,
-  -portability-avoid-pragma-once,
-  -readability-identifier-length,
-  -misc-include-cleaner,
-  -hicpp-deprecated-headers,
-  -modernize-deprecated-headers,
-  -performance-enum-size,
-  -modernize-use-trailing-return-type,
-  -cppcoreguidelines-missing-std-forward,
-  -google-readability-braces-around-statements,
-  -hicpp-braces-around-statements,
-  -readability-braces-around-statements,
-  -cppcoreguidelines-owning-memory,
-  -cppcoreguidelines-special-member-functions,
-  -hicpp-special-member-functions,
-  -cppcoreguidelines-avoid-c-arrays,
-  -hicpp-avoid-c-arrays,
-  -modernize-avoid-c-arrays,
-  -misc-use-anonymous-namespace,
-  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-  -hicpp-no-array-decay,
-  -cppcoreguidelines-pro-type-vararg,
-  -hicpp-vararg,
-  -hicpp-new-delete-operators,
-  -misc-new-delete-overloads,
-  -hicpp-named-parameter,
-  -readability-named-parameter,
-  -bugprone-reserved-identifier,
-  -readability-implicit-bool-conversion,
-  -misc-const-correctness,
-  -bugprone-easily-swappable-parameters,
-  -hicpp-use-nullptr,
-  -modernize-use-nullptr,
-  -cppcoreguidelines-pro-type-cstyle-cast,
-  -cert-err33-c,
-  -modernize-use-std-print,
-  -misc-non-private-member-variables-in-classes,
-  -google-explicit-constructor,
-  -hicpp-explicit-conversions,
-  -misc-use-internal-linkage,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -cert-dcl03-c,
-  -hicpp-static-assert,
-  -misc-static-assert,
-  -clang-analyzer-cplusplus.NewDeleteLeaks,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic
+# Enable all checks; disable only rules that do not apply to this project or cannot be
+# satisfied without fighting required APIs or tooling.
+
+Checks:
+  - '*' # enable all checks, then selectively disable below
+
+  # Irrelevant platforms.
+  - '-altera-*'
+  - '-android-*'
+  - '-darwin-*'
+  - '-fuchsia-*'
+  - '-zircon-*'
+  - '-objc-*'
+  - '-google-objc-*'
+  - '-llvmlibc-*'
+
+  # Compatibility: C varargs (cpp_printk + mocks).
+  - '-cppcoreguidelines-pro-type-vararg'
+  - '-hicpp-vararg'
+
+  # Style: pragma once convention.
+  - '-llvm-header-guard'
+  - '-portability-avoid-pragma-once'
+
+  # Style: intentional numeric literals.
+  - '-readability-magic-numbers'
+  - '-cppcoreguidelines-avoid-magic-numbers'
+
+  # Style: leading return types are project convention.
+  - '-modernize-use-trailing-return-type'
+
+  # Tooling: include graph not complete; noisy here.
+  - '-misc-include-cleaner'
+
+  # Namespace std: libstdc++ assertion hook contract.
+  - '-cert-dcl58-cpp'
+
+  # Operator new/delete: delete-only policy in this repo.
+  - '-cert-dcl54-cpp'
+  - '-hicpp-new-delete-operators'
+  - '-misc-new-delete-overloads'
+
+  # Modernize: project does not use C++23 std::println.
+  - '-modernize-use-std-print'
+
+  # Ownership: expressed via std::expected + placement new.
+  - '-cppcoreguidelines-owning-memory'
+
+  # Array decay: va_list/va_start macro expansion false positives in mocks.
+  - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
+  - '-hicpp-no-array-decay'
+
+  # API: kmalloc signature uses intentionally similar integral types.
+  - '-bugprone-easily-swappable-parameters'
+
+  # Globals: mutable module/mocks are intentional in bridge tests.
+  - '-cppcoreguidelines-avoid-non-const-global-variables'
+
+  # Anonymous namespace: conflicts with llvm-prefer-static-over-anonymous-namespace.
+  - '-misc-use-anonymous-namespace'
 WarningsAsErrors: '*'
 # Match project paths from compile_commands (often absolute) and relative invocations.
 HeaderFilterRegex: '(^|/)((include|src|tests|compat)/)'

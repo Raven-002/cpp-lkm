@@ -3,6 +3,8 @@
 #include "cpp_lkm/module/module.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
+#include <array>
+
 namespace std
 {
 void __glibcxx_assert_fail(const char* file, int line, const char* function,
@@ -18,23 +20,27 @@ void __glibcxx_assert_fail(const char* file, int line, const char* function,
 
 #include "cpp_lkm/runtime/module_entry.h"
 
+namespace
+{
+struct alignas(CppKernelModule) ModuleStorage
+{
+    std::array<unsigned char, sizeof(CppKernelModule)> bytes{};
+};
+ModuleStorage g_module_storage{};
+CppKernelModule* g_module = nullptr;
+
+static_assert(sizeof(ModuleStorage::bytes) >= sizeof(CppKernelModule),
+              "ModuleStorage size must satisfy module size");
+static_assert(alignof(ModuleStorage) >= alignof(CppKernelModule),
+              "ModuleStorage alignment must satisfy module alignment");
+} // namespace
+
 extern "C"
 {
 
-    struct alignas(CppKernelModule) ModuleStorage
-    {
-        unsigned char bytes[sizeof(CppKernelModule)];
-    };
-    static ModuleStorage g_module_storage;
-    static CppKernelModule* g_module = nullptr;
-    static_assert(sizeof(ModuleStorage) >= sizeof(CppKernelModule),
-                  "ModuleStorage size must satisfy module size");
-    static_assert(alignof(ModuleStorage) >= alignof(CppKernelModule),
-                  "ModuleStorage alignment must satisfy module alignment");
-
     int cpp_module_init(void)
     {
-        g_module = new (&g_module_storage) CppKernelModule{};
+        g_module = new (g_module_storage.bytes.data()) CppKernelModule{};
         auto res = g_module->init();
         if (!res)
         {
@@ -47,7 +53,7 @@ extern "C"
 
     void cpp_module_exit(void)
     {
-        if (g_module)
+        if (g_module != nullptr)
         {
             g_module->~CppKernelModule();
             g_module = nullptr;

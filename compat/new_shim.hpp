@@ -9,12 +9,12 @@
 // Why: in freestanding/kernel code with no exceptions, heap-form new is not a
 // safe failure-propagation mechanism for this project.
 #pragma once
-#include <stddef.h>
+#include <cstddef>
 
 #if __has_include(<new>)
 #include <new> // IWYU pragma: keep
 #else
-inline void* operator new(size_t, void* p) noexcept
+inline void* operator new(std::size_t, void* p) noexcept
 {
     return p;
 }

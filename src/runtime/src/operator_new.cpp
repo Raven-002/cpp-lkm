@@ -1,6 +1,6 @@
 #include "cpp_lkm/runtime/kernel_api.h"
 
-#include <stddef.h>
+#include <cstddef>
 
 // Heap-form operator new is intentionally NOT defined.
 // If you are seeing a linker error referencing operator new(size_t),
@@ -15,12 +15,13 @@
 //   - nothrow heap forms
 // These remain a linker trap by design so allocation must flow through kalloc.
 
-void operator delete(void* p) noexcept
+void operator delete(void* ptr) noexcept
 {
-    cpp_kfree(p);
+    cpp_kfree(ptr);
 }
 
-void operator delete(void* p, size_t) noexcept
+void operator delete(void* ptr, std::size_t size_bytes) noexcept
 {
-    cpp_kfree(p);
+    (void)size_bytes;
+    cpp_kfree(ptr);
 }

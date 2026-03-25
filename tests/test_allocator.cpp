@@ -3,86 +3,99 @@
 #include "cpp_lkm/runtime/kalloc.hpp"
 #include "tests/support/mock_globals.hpp"
 
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
-struct TestObj
+class TestObj
 {
-    int x;
+  public:
     static int destructor_count;
 
-    explicit TestObj(int val) : x(val) {}
+    explicit TestObj(int val) : x_(val) {}
     ~TestObj()
     {
         ++destructor_count;
     }
+
+    TestObj(const TestObj&) = delete;
+    TestObj& operator=(const TestObj&) = delete;
+    TestObj(TestObj&&) = delete;
+    TestObj& operator=(TestObj&&) = delete;
+
+    [[nodiscard]] int value() const noexcept
+    {
+        return x_;
+    }
+
+  private:
+    int x_{};
 };
 
 int TestObj::destructor_count = 0;
 
 // ---- GFP flag selection ----
 
-void test_kalloc_success()
+static void test_kalloc_success()
 {
     reset_mock_state();
-    auto p = kalloc<TestObj>(42);
-    assert(p.has_value());
-    assert(p.value()->x == 42);
-    assert(__mock_last_gfp == CPP_GFP_KERNEL);
-    kfree_obj(*p);
+    auto ptr = kalloc<TestObj>(42);
+    assert(ptr.has_value());
+    assert(ptr.value()->value() == 42);
+    assert(g_mock_last_gfp == CPP_GFP_KERNEL);
+    kfree_obj(*ptr);
 }
 
-void test_kalloc_atomic()
+static void test_kalloc_atomic()
 {
     reset_mock_state();
-    __mock_preempt_count = 1; // in_atomic() → true
-    auto p = kalloc<TestObj>(10);
-    assert(p.has_value());
-    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
-    kfree_obj(*p);
+    g_mock_preempt_count = 1; // in_atomic() → true
+    auto ptr = kalloc<TestObj>(10);
+    assert(ptr.has_value());
+    assert(g_mock_last_gfp == CPP_GFP_ATOMIC);
+    kfree_obj(*ptr);
 }
 
-void test_kalloc_irqs_disabled()
+static void test_kalloc_irqs_disabled()
 {
     reset_mock_state();
-    __mock_irqs_disabled = 1;
-    auto p = kalloc<TestObj>(10);
-    assert(p.has_value());
-    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
-    kfree_obj(*p);
+    g_mock_irqs_disabled = 1;
+    auto ptr = kalloc<TestObj>(10);
+    assert(ptr.has_value());
+    assert(g_mock_last_gfp == CPP_GFP_ATOMIC);
+    kfree_obj(*ptr);
 }
 
-void test_kalloc_nmi()
+static void test_kalloc_nmi()
 {
     reset_mock_state();
-    __mock_in_nmi = 1;
-    auto p = kalloc<TestObj>(10);
-    assert(p.has_value());
-    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
-    kfree_obj(*p);
+    g_mock_in_nmi = 1;
+    auto ptr = kalloc<TestObj>(10);
+    assert(ptr.has_value());
+    assert(g_mock_last_gfp == CPP_GFP_ATOMIC);
+    kfree_obj(*ptr);
 }
 
 // ---- Allocation failure ----
 
-void test_kalloc_fail()
+static void test_kalloc_fail()
 {
     reset_mock_state();
-    __mock_kmalloc_fail = 1;
-    auto p = kalloc<TestObj>(99);
-    assert(!p.has_value());
-    assert(p.error() == ErrorCode::AllocFail);
+    g_mock_kmalloc_fail = 1;
+    auto ptr = kalloc<TestObj>(99);
+    assert(!ptr.has_value());
+    assert(ptr.error() == ErrorCode::AllocFail);
 }
 
-void test_kalloc_array_fail()
+static void test_kalloc_array_fail()
 {
     reset_mock_state();
-    __mock_kmalloc_fail = 1;
+    g_mock_kmalloc_fail = 1;
     auto arr = kalloc_array<int>(4);
     assert(!arr.has_value());
     assert(arr.error() == ErrorCode::AllocFail);
 }
 
-void test_kalloc_array_overflow_guard()
+static void test_kalloc_array_overflow_guard()
 {
     reset_mock_state();
     auto arr = kalloc_array<int>(static_cast<size_t>(-1));
@@ -92,47 +105,50 @@ void test_kalloc_array_overflow_guard()
 
 // ---- kfree_obj ----
 
-void test_kfree_obj_null()
+static void test_kfree_obj_null()
 {
-    TestObj* p = nullptr;
-    kfree_obj(p); // Must be a silent no-op
+    TestObj* ptr = nullptr;
+    kfree_obj(ptr); // Must be a silent no-op
 }
 
-void test_kfree_obj_calls_destructor()
+static void test_kfree_obj_calls_destructor()
 {
     reset_mock_state();
     TestObj::destructor_count = 0;
     auto result = kalloc<TestObj>(7);
     assert(result.has_value());
     TestObj* raw = *result;
-    assert(raw->x == 7);
+    assert(raw->value() == 7);
     kfree_obj(raw);
     assert(TestObj::destructor_count == 1);
 }
 
 // ---- Array allocation ----
 
-void test_kalloc_array_success()
+static void test_kalloc_array_success()
 {
     reset_mock_state();
     auto arr = kalloc_array<int>(10);
     assert(arr.has_value());
-    int* p = *arr;
-    for (int i = 0; i < 10; ++i)
-        p[i] = i;
-    cpp_kfree(p);
+    int* raw = *arr;
+    for (int idx = 0; idx < 10; ++idx)
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+        raw[idx] = idx;
+    }
+    cpp_kfree(raw);
 }
 
-void test_gfp_priority_with_multiple_signals()
+static void test_gfp_priority_with_multiple_signals()
 {
     reset_mock_state();
-    __mock_preempt_count = 1;
-    __mock_irqs_disabled = 1;
-    __mock_in_nmi = 1;
-    auto p = kalloc<TestObj>(5);
-    assert(p.has_value());
-    assert(__mock_last_gfp == CPP_GFP_ATOMIC);
-    kfree_obj(*p);
+    g_mock_preempt_count = 1;
+    g_mock_irqs_disabled = 1;
+    g_mock_in_nmi = 1;
+    auto ptr = kalloc<TestObj>(5);
+    assert(ptr.has_value());
+    assert(g_mock_last_gfp == CPP_GFP_ATOMIC);
+    kfree_obj(*ptr);
 }
 
 extern "C" int main()

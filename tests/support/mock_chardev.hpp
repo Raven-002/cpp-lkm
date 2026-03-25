@@ -3,8 +3,8 @@
 
 #include "cpp_lkm/runtime/kernel_api.h"
 
+#include <cstddef>
 #include <cstdint>
-#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C"

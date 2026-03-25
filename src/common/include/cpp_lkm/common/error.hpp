@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <expected>
 
-enum class ErrorCode : int
+enum class ErrorCode : std::int8_t
 {
     None = 0,
     AllocFail = -12,     // -ENOMEM
@@ -10,9 +11,9 @@ enum class ErrorCode : int
 };
 
 // Named conversion to avoid scattered static_cast<int> at every call site.
-[[nodiscard]] constexpr int to_errno(ErrorCode e) noexcept
+[[nodiscard]] constexpr int to_errno(ErrorCode code) noexcept
 {
-    return static_cast<int>(e);
+    return static_cast<int>(code);
 }
 
 template <typename T> using Result = std::expected<T, ErrorCode>;

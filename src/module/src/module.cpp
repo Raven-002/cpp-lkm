@@ -20,21 +20,29 @@ Result<void> CppKernelModule::init()
     {
         auto allocated = kalloc<Resource>();
         if (!allocated)
+        {
             return std::unexpected(allocated.error());
+        }
         target = *allocated;
         return {};
     };
 
     if (auto first = assign_resource(_resource1); !first)
+    {
         return std::unexpected(first.error());
+    }
     if (auto second = assign_resource(_resource2); !second)
+    {
         return std::unexpected(second.error());
+    }
 
     _resource1->id = 1;
     _resource2->id = 2;
 
-    if (auto u = _userspace.init(); !u)
-        return u;
+    if (auto usr_init = _userspace.init(); !usr_init)
+    {
+        return usr_init;
+    }
 
     cpp_printk(CPP_KERN_INFO "[CPP] Initialized\n");
     return {};

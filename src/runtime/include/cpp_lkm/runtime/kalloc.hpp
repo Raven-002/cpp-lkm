@@ -7,20 +7,25 @@
 #include <expected>
 #include <limits>
 #include <type_traits>
+#include <utility>
 
 // Select the correct GFP flag for the current CPU context.
 // Must never be called with a size of zero.
 [[nodiscard]] inline cpp_gfp_t current_gfp_flags() noexcept
 {
-    return (cpp_in_atomic() || cpp_irqs_disabled() || cpp_in_nmi()) ? CPP_GFP_ATOMIC
-                                                                    : CPP_GFP_KERNEL;
+    return (cpp_in_atomic() != 0 || cpp_irqs_disabled() != 0 || cpp_in_nmi() != 0) ? CPP_GFP_ATOMIC
+                                                                                   : CPP_GFP_KERNEL;
 }
 
 [[nodiscard]] inline Result<void*> kmalloc_or_error(size_t bytes) noexcept
 {
+    // Returned memory is written by placement new; not logically const void*.
+    // NOLINTNEXTLINE(misc-const-correctness)
     void* mem = cpp_kmalloc(bytes, current_gfp_flags());
-    if (!mem) [[unlikely]]
+    if (mem == nullptr) [[unlikely]]
+    {
         return std::unexpected(ErrorCode::AllocFail);
+    }
     return mem;
 }
 
@@ -31,8 +36,10 @@ template <typename T, typename... Args> [[nodiscard]] Result<T*> kalloc(Args&&..
 {
     auto mem = kmalloc_or_error(sizeof(T));
     if (!mem)
+    {
         return std::unexpected(mem.error());
-    return new (*mem) T{static_cast<Args&&>(args)...};
+    }
+    return new (*mem) T{std::forward<Args>(args)...};
 }
 
 // Allocate a fixed-size array of trivially constructible types.
@@ -41,25 +48,31 @@ template <typename T> [[nodiscard]] Result<T*> kalloc_array(size_t count) noexce
     static_assert(std::is_trivially_default_constructible_v<T>,
                   "kalloc_array requires trivially constructible types; use kalloc() for others");
     if (count == 0)
+    {
         return std::unexpected(ErrorCode::AllocFail);
+    }
 
     constexpr size_t max_size = std::numeric_limits<size_t>::max();
     if (count > (max_size / sizeof(T)))
+    {
         return std::unexpected(ErrorCode::AllocFail);
+    }
 
     auto mem = kmalloc_or_error(sizeof(T) * count);
     if (!mem)
+    {
         return std::unexpected(mem.error());
+    }
     return static_cast<T*>(*mem);
 }
 
 // Destroy and free a pointer previously returned by kalloc<T>().
 // Safe to call with nullptr.
-template <typename T> void kfree_obj(T* p) noexcept
+template <typename T> void kfree_obj(T* ptr) noexcept
 {
-    if (p)
+    if (ptr != nullptr)
     {
-        p->~T();
-        cpp_kfree(p);
+        ptr->~T();
+        cpp_kfree(ptr);
     }
 }

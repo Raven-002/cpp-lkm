@@ -3,8 +3,9 @@
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
-#include <stddef.h>
 
 // Userspace-facing character device: read/write via the runtime bridge (miscdevice).
 class UserspaceDevice
@@ -28,6 +29,6 @@ class UserspaceDevice
     static constexpr size_t k_buf_size = 256;
 
     bool _registered = false;
-    char _write_buf[k_buf_size]{};
+    std::array<char, k_buf_size> _write_buf{};
     size_t _write_len = 0;
 };

@@ -4,72 +4,72 @@
 #include "cpp_lkm/runtime/module_entry.h"
 #include "tests/support/mock_globals.hpp"
 
-#include <assert.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
-void test_happy_path()
+static void test_happy_path()
 {
     reset_mock_state();
-    int res = cpp_module_init();
+    const int res = cpp_module_init();
     assert(res == 0);
-    assert(__mock_cpp_constructed_count == 1);
-    assert(__mock_cpp_initialized_count == 1);
-    assert(__mock_cpp_destructed_count == 0);
-    assert(__mock_chardev_registered == 1);
+    assert(g_mock_cpp_constructed_count == 1);
+    assert(g_mock_cpp_initialized_count == 1);
+    assert(g_mock_cpp_destructed_count == 0);
+    assert(g_mock_chardev_registered == 1);
     cpp_module_exit();
-    assert(__mock_cpp_destructed_count == 1);
-    assert(__mock_chardev_registered == 0);
+    assert(g_mock_cpp_destructed_count == 1);
+    assert(g_mock_chardev_registered == 0);
 }
 
-void test_alloc_fail_in_init()
+static void test_alloc_fail_in_init()
 {
     reset_mock_state();
-    __mock_kmalloc_fail = 1;
-    int res = cpp_module_init();
+    g_mock_kmalloc_fail = 1;
+    const int res = cpp_module_init();
     assert(res == to_errno(ErrorCode::AllocFail));
-    assert(__mock_cpp_constructed_count == 1);
-    assert(__mock_cpp_initialized_count == 0);
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_constructed_count == 1);
+    assert(g_mock_cpp_initialized_count == 0);
+    assert(g_mock_cpp_destructed_count == 1);
     cpp_module_exit(); // Must be safe even after failed init
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_destructed_count == 1);
 }
 
-void test_partial_init_cleanup()
+static void test_partial_init_cleanup()
 {
     reset_mock_state();
-    __mock_kmalloc_fail_after = 2; // Second allocation (resource2) fails
-    int res = cpp_module_init();
+    g_mock_kmalloc_fail_after = 2; // Second allocation (resource2) fails
+    const int res = cpp_module_init();
     assert(res == to_errno(ErrorCode::AllocFail));
-    assert(__mock_cpp_constructed_count == 1);
-    assert(__mock_cpp_initialized_count == 0);
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_constructed_count == 1);
+    assert(g_mock_cpp_initialized_count == 0);
+    assert(g_mock_cpp_destructed_count == 1);
     // Module instance was torn down; exit must still be safe
     cpp_module_exit();
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_destructed_count == 1);
 }
 
-void test_exit_after_failed_init()
+static void test_exit_after_failed_init()
 {
     reset_mock_state();
-    __mock_kmalloc_fail = 1;
+    g_mock_kmalloc_fail = 1;
     cpp_module_init();
     // g_module is null here; cpp_module_exit must be a no-op
     cpp_module_exit();
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_destructed_count == 1);
 }
 
-void test_destructor_print()
+static void test_destructor_print()
 {
     reset_mock_state();
     assert(cpp_module_init() == 0);
     cpp_module_exit();
-    assert(__mock_cpp_destructed_count == 1);
+    assert(g_mock_cpp_destructed_count == 1);
 }
 
-void test_errno_mapping()
+static void test_errno_mapping()
 {
-    assert(to_errno(ErrorCode::None) == 0);
-    assert(to_errno(ErrorCode::AllocFail) == -12);
+    static_assert(to_errno(ErrorCode::None) == 0);
+    static_assert(to_errno(ErrorCode::AllocFail) == -12);
 }
 
 extern "C" int main()

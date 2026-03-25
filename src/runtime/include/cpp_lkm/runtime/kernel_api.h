@@ -1,9 +1,7 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
-
 #ifdef __cplusplus
+#include <cstddef>
 #include <cstdint>
 
 using cpp_ssize_t = std::int64_t;
@@ -15,6 +13,9 @@ using cpp_gfp_t = unsigned int;
 inline constexpr cpp_gfp_t CPP_GFP_KERNEL = 0x1U;
 inline constexpr cpp_gfp_t CPP_GFP_ATOMIC = 0x2U;
 #else
+#include <stddef.h>
+#include <stdint.h>
+
 typedef int64_t cpp_ssize_t;
 typedef cpp_ssize_t (*cpp_chardev_read_cb)(void* ctx, void* kbuf, size_t len, int64_t* pos);
 typedef cpp_ssize_t (*cpp_chardev_write_cb)(void* ctx, const void* kbuf, size_t len, int64_t* pos);
@@ -37,7 +38,7 @@ extern "C"
 
     int cpp_printk(const char* fmt, ...);
     void* cpp_kmalloc(size_t size, cpp_gfp_t flags);
-    void cpp_kfree(const void* p);
+    void cpp_kfree(const void* ptr);
     void cpp_assert_fail(const char* expr, const char* file, int line, const char* func);
     int cpp_in_atomic(void);
     int cpp_irqs_disabled(void);

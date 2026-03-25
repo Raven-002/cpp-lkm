@@ -13,7 +13,7 @@
 /* Forward declarations to satisfy -Wmissing-prototypes */
 int cpp_printk(const char *fmt, ...);
 void *cpp_kmalloc(size_t size, gfp_t flags);
-void cpp_kfree(const void *p);
+void cpp_kfree(const void *ptr);
 void cpp_assert_fail(const char *expr, const char *file, int line, const char *func);
 void __assert_fail(const char *assertion, const char *file, int line, const char *function);
 int cpp_in_atomic(void);
@@ -51,8 +51,8 @@ void *cpp_kmalloc(size_t size, gfp_t flags) {
     return kmalloc(size, flags);
 }
 
-void cpp_kfree(const void *p) {
-    kfree(p);
+void cpp_kfree(const void *ptr) {
+    kfree(ptr);
 }
 
 void cpp_assert_fail(const char *expr, const char *file, int line, const char *func) {

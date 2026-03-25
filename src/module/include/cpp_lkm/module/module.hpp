@@ -7,6 +7,11 @@ class CppKernelModule
 {
   public:
     CppKernelModule();
+    CppKernelModule(const CppKernelModule&) = delete;
+    CppKernelModule& operator=(const CppKernelModule&) = delete;
+    CppKernelModule(CppKernelModule&&) = delete;
+    CppKernelModule& operator=(CppKernelModule&&) = delete;
+
     [[nodiscard]] Result<void> init();
     ~CppKernelModule();
 
