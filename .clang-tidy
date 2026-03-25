@@ -42,7 +42,7 @@ Checks:
 
   # Anonymous namespace: conflicts with llvm-prefer-static-over-anonymous-namespace.
   - '-misc-use-anonymous-namespace'
+
 WarningsAsErrors: '*'
-# Match project paths from compile_commands (often absolute) and relative invocations.
-HeaderFilterRegex: '(^|/)((include|src|tests|compat)/)'
+HeaderFilterRegex: '*'
 FormatStyle: file
