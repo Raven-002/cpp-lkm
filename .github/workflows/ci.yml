@@ -2,8 +2,11 @@ name: ci
 
 on:
   push:
+    paths-ignore:
+      - "**"
   pull_request:
-  workflow_dispatch:
+    paths-ignore:
+      - "**"
 
 jobs:
   host:
