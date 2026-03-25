@@ -29,11 +29,6 @@ Checks:
   # Tooling: include graph not complete; noisy here.
   - '-misc-include-cleaner'
 
-  # Operator new/delete: delete-only policy in this repo.
-  - '-cert-dcl54-cpp'
-  - '-hicpp-new-delete-operators'
-  - '-misc-new-delete-overloads'
-
   # Modernize: project does not use C++23 std::println.
   - '-modernize-use-std-print'
 

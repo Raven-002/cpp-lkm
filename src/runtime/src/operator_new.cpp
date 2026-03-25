@@ -15,6 +15,7 @@
 //   - nothrow heap forms
 // These remain a linker trap by design so allocation must flow through kalloc.
 
+// NOLINTBEGIN(cert-dcl54-cpp, hicpp-new-delete-operators, misc-new-delete-overloads)
 void operator delete(void* ptr) noexcept
 {
     cpp_kfree(ptr);
@@ -25,3 +26,4 @@ void operator delete(void* ptr, std::size_t size_bytes) noexcept
     (void)size_bytes;
     cpp_kfree(ptr);
 }
+// NOLINTEND(cert-dcl54-cpp, hicpp-new-delete-operators, misc-new-delete-overloads)

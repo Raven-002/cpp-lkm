@@ -1,4 +1,4 @@
-#include "compat/new_shim.hpp"
+#include "compat/new_shim.hpp" // IWYU pragma: keep
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/module/module.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
