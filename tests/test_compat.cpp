@@ -14,7 +14,7 @@ void test_expected_value()
 
 void test_expected_error()
 {
-    std::expected<int, ErrorCode> e = std::unexpected(ErrorCode::AllocFail);
+    Result<int> e = std::unexpected(ErrorCode::AllocFail);
     assert(!e.has_value());
     assert(e.error() == ErrorCode::AllocFail);
     printf("test_expected_error passed\n");

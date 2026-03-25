@@ -2,13 +2,11 @@
 
 #include "cpp_lkm/common/error.hpp"
 
-#include <expected>
-
 class CppKernelModule
 {
   public:
     CppKernelModule();
-    [[nodiscard]] std::expected<void, ErrorCode> init();
+    [[nodiscard]] Result<void> init();
     ~CppKernelModule();
 
   private:

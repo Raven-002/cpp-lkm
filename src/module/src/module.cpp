@@ -14,9 +14,9 @@ CppKernelModule::CppKernelModule()
     cpp_printk(CPP_KERN_INFO "[CPP] Constructed\n");
 }
 
-std::expected<void, ErrorCode> CppKernelModule::init()
+Result<void> CppKernelModule::init()
 {
-    auto assign_resource = [](Resource*& target) -> std::expected<void, ErrorCode>
+    auto assign_resource = [](Resource*& target) -> Result<void>
     {
         auto allocated = kalloc<Resource>();
         if (!allocated)

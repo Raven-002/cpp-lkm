@@ -1,5 +1,7 @@
 #pragma once
 
+#include <expected>
+
 enum class ErrorCode : int
 {
     None = 0,
@@ -11,3 +13,6 @@ enum class ErrorCode : int
 {
     return static_cast<int>(e);
 }
+
+template <typename T>
+using Result = std::expected<T, ErrorCode>;

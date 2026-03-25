@@ -16,7 +16,7 @@
                                                                     : CPP_GFP_KERNEL;
 }
 
-[[nodiscard]] inline std::expected<void*, ErrorCode> kmalloc_or_error(size_t bytes) noexcept
+[[nodiscard]] inline Result<void*> kmalloc_or_error(size_t bytes) noexcept
 {
     void* mem = cpp_kmalloc(bytes, current_gfp_flags());
     if (!mem) [[unlikely]]
@@ -28,7 +28,7 @@
 // Returns ErrorCode::AllocFail if kmalloc returns null.
 // The caller owns the returned pointer and must free it with kfree_obj<T>().
 template <typename T, typename... Args>
-[[nodiscard]] std::expected<T*, ErrorCode> kalloc(Args&&... args) noexcept
+[[nodiscard]] Result<T*> kalloc(Args&&... args) noexcept
 {
     auto mem = kmalloc_or_error(sizeof(T));
     if (!mem)
@@ -37,7 +37,7 @@ template <typename T, typename... Args>
 }
 
 // Allocate a fixed-size array of trivially constructible types.
-template <typename T> [[nodiscard]] std::expected<T*, ErrorCode> kalloc_array(size_t count) noexcept
+template <typename T> [[nodiscard]] Result<T*> kalloc_array(size_t count) noexcept
 {
     static_assert(std::is_trivially_default_constructible_v<T>,
                   "kalloc_array requires trivially constructible types; use kalloc() for others");
