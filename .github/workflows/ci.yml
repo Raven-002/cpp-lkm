@@ -30,7 +30,7 @@ jobs:
 
       - name: C++ lint
         run: |
-          files=$(git ls-files 'src/*.cpp' 'include/*.hpp' 'tests/*.cpp' 'tests/*.hpp' 'compat/*.hpp' | rg -v 'tests/test_nodiscard\.cpp|tests/test_negative_new\.cpp' | while IFS= read -r f; do [[ -f "$f" ]] && echo "$f"; done || true)
+          files=$(bash scripts/clang-tidy-files.sh || true)
           if [ -n "$files" ]; then clang-tidy -p build $files; fi
 
       - name: CMake format check
@@ -42,4 +42,26 @@ jobs:
         run: bash scripts/cmake-lint.sh
 
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2 "docs/**/*.md" "README.md"
+        run: npx --yes markdownlint-cli2@0.22.0 "docs/**/*.md" "README.md"
+
+  platform-gcc12_5:
+    runs-on: ubuntu-latest
+    container:
+      image: gcc:12.5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y cmake make
+
+      - name: Configure (platform)
+        run: cmake -B build-platform -DBUILD_MODE=platform -DBUILD_KO=OFF -DCMAKE_CXX_COMPILER=g++
+
+      - name: Build (platform)
+        run: cmake --build build-platform -j
+
+      - name: Test (platform)
+        run: ctest --test-dir build-platform -V

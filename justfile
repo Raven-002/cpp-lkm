@@ -56,7 +56,7 @@ qa-lint: qa-lint-cpp qa-lint-markdown
 qa-lint-cpp:
   if ! command -v clang-tidy >/dev/null 2>&1; then echo "clang-tidy not found. Install it (e.g. clang-tools-extra) to run lint."; exit 2; fi && \
   cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && \
-  files="$(git ls-files 'src/*.cpp' 'include/*.hpp' 'tests/*.cpp' 'tests/*.hpp' 'compat/*.hpp' | rg -v 'tests/test_nodiscard\.cpp|tests/test_negative_new\.cpp' | while IFS= read -r f; do [[ -f "$f" ]] && echo "$f"; done || true)" && \
+  files="$(bash scripts/clang-tidy-files.sh || true)" && \
   if [[ -z "$files" ]]; then echo "No files found to lint."; exit 0; fi && \
   clang-tidy -p "{{BUILD_DIR}}" $files
 

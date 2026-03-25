@@ -16,6 +16,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern "C"
 {
@@ -28,11 +29,21 @@ extern "C"
     int __mock_preempt_count = 0;
     int __mock_irqs_disabled = 0;
     int __mock_in_nmi = 0;
+    int __mock_cpp_constructed_count = 0;
+    int __mock_cpp_initialized_count = 0;
+    int __mock_cpp_destructed_count = 0;
 
     // ----- Bridge implementations -----
 
     int cpp_printk(const char* fmt, ...)
     {
+        if (strstr(fmt, "[CPP] Constructed") != nullptr)
+            ++__mock_cpp_constructed_count;
+        if (strstr(fmt, "[CPP] Initialized") != nullptr)
+            ++__mock_cpp_initialized_count;
+        if (strstr(fmt, "[CPP] Destructed") != nullptr)
+            ++__mock_cpp_destructed_count;
+
         va_list args;
         va_start(args, fmt);
         int res = vprintf(fmt, args);

@@ -8,7 +8,7 @@ The module uses a strictly defined two-phase initialization pattern:
    placement-new. This phase is trivial, performs zero allocations, and cannot
    fail.
 2. **Phase 2 (Initialization)**: The `init()` method is called. This phase is
-   fallible, may allocate resources (like `TestResource`s defined in `test_resource.hpp`),
+   fallible and may allocate internal resources,
    and returns `std::expected<void, ErrorCode>`. Any failures must be handled gracefully.
 
 ## Context-Aware Allocator (`kalloc`)

@@ -3,10 +3,6 @@
 
 #include <expected>
 
-// Forward declaration — full definition lives in test_resource.hpp.
-// module.cpp includes test_resource.hpp for the complete type.
-struct TestResource;
-
 class CppKernelModule
 {
   public:
@@ -15,6 +11,7 @@ class CppKernelModule
     ~CppKernelModule();
 
   private:
-    TestResource* _resource1 = nullptr;
-    TestResource* _resource2 = nullptr;
+    class Resource;
+    Resource* _resource1 = nullptr;
+    Resource* _resource2 = nullptr;
 };

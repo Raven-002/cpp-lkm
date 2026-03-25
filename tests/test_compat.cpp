@@ -1,3 +1,5 @@
+#include "error.hpp"
+
 #include <assert.h>
 #include <expected>
 #include <stdio.h>
@@ -12,9 +14,9 @@ void test_expected_value()
 
 void test_expected_error()
 {
-    std::expected<int, int> e = std::unexpected(99);
+    std::expected<int, ErrorCode> e = std::unexpected(ErrorCode::AllocFail);
     assert(!e.has_value());
-    assert(e.error() == 99);
+    assert(e.error() == ErrorCode::AllocFail);
     printf("test_expected_error passed\n");
 }
 

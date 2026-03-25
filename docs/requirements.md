@@ -155,8 +155,10 @@ For allocating arrays of trivially constructible types (raw buffers, POD arrays)
 ```cpp
 template<typename T>
 [[nodiscard]] std::expected<T*, ErrorCode> kalloc_array(size_t count) noexcept {
-    static_assert(__is_trivially_constructible(T),
+    static_assert(std::is_trivially_default_constructible_v<T>,
         "kalloc_array requires trivially constructible types; use kalloc() for others");
+    if (count == 0 || count > (std::numeric_limits<size_t>::max() / sizeof(T)))
+        return std::unexpected(ErrorCode::AllocFail);
     void* mem = kmalloc(sizeof(T) * count, current_gfp_flags());
     if (!mem) [[unlikely]]
         return std::unexpected(ErrorCode::AllocFail);
@@ -269,13 +271,11 @@ allocated.
 enum class ErrorCode : int {
     None        =  0,
     AllocFail   = -12,   // -ENOMEM
-    HwHandshake = -5,    // -EIO
-    BadState    = -22,   // -EINVAL
 };
 ```
 
 Values are inlined to avoid depending on `<errno.h>` macros before mock
-headers are included. `static_cast<int>(err)` must be a valid `module_init`
+headers are included. `to_errno(err)` must be a valid `module_init`
 return for all non-`None` values.
 
 ---
@@ -401,7 +401,8 @@ cmake -DBUILD_MODE=platform  # G++12.5.x, mock headers, runs all tests
 cmake -DBUILD_MODE=ci        # Same as platform; non-zero exit on any failure
 ```
 
-`BUILD_MODE=platform` and `BUILD_MODE=ci` require `-DGCC12_CXX=/path/to/g++12`.
+`BUILD_MODE=platform` and `BUILD_MODE=ci` require a GCC 12.5.x compiler
+(for example `-DCMAKE_CXX_COMPILER=/path/to/g++-12.5`).
 
 No arch flags are injected by CMake. Additional target flags must be passed via
 `EXTRA_CXX_FLAGS`.
@@ -607,11 +608,10 @@ enforces this as a hard gate.
 | --- | --- | --- |
 | `test_happy_path` | Normal init | `init()` returns value; `g_module` valid |
 | `test_alloc_fail_in_init` | kmalloc_fail=1 before init | AllocFail; cleanup |
-| `test_hw_fail` | HW handshake mock fails | unexpected(HwHandshake) |
 | `test_partial_init_cleanup` | First alloc ok, second fails | No double-free |
 | `test_exit_after_failed_init` | exit after failed init | Null-safe dtor |
 | `test_destructor_print` | Full lifecycle | `[CPP] Destructed` once |
-| `test_errno_mapping` | `static_cast<int>` of ErrorCode | Match Linux errno |
+| `test_errno_mapping` | `to_errno(ErrorCode::AllocFail)` | Match Linux errno |
 
 **`tests/test_allocator.cpp` — `kalloc<T>()` and GFP flag selection:**
 
@@ -621,7 +621,10 @@ enforces this as a hard gate.
 | `test_kalloc_atomic` | __mock_preempt_count=1 | __mock_last_gfp==GFP_ATOMIC |
 | `test_kalloc_irqs_disabled` | irqs_disabled=1 | GFP_ATOMIC |
 | `test_kalloc_nmi` | in_nmi=1 | GFP_ATOMIC |
+| `test_gfp_priority_with_multiple_signals` | preempt+irq+nmi set | GFP_ATOMIC |
 | `test_kalloc_fail` | kmalloc_fail=1 | unexpected(AllocFail) |
+| `array_fail` | `kalloc_array` with kmalloc_fail=1 | unexpected(AllocFail) |
+| `array_overflow_guard` | `kalloc_array` count overflow | AllocFail |
 | `test_kfree_obj_null` | kfree_obj(nullptr) | No-op |
 | `test_kfree_obj_valid` | kfree_obj(kalloc result) | Destructor + free |
 
@@ -648,12 +651,12 @@ ctest --test-dir build -V
 
 # Platform mode (G++12)
 cmake -B build-platform -DBUILD_MODE=platform \
-  -DGCC12_CXX=/path/to/g++12
+  -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
 cmake --build build-platform
 ctest --test-dir build-platform -V
 
 # CI gate
-cmake -B build-ci -DBUILD_MODE=ci -DGCC12_CXX=/path/to/g++12
+cmake -B build-ci -DBUILD_MODE=ci -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
 cmake --build build-ci
 ctest --test-dir build-ci --output-on-failure
 ```
@@ -704,5 +707,4 @@ project/
 | FPU guards | Not mocked | Stub kernel_fpu_begin/end |
 | SMP / per-CPU data | Not addressed | this_cpu_ptr etc. |
 | NMI allocator strictness | Partially modeled | GFP_ATOMIC insufficient |
-| `kalloc_array` bounds | Not addressed | Check count*sizeof(T) |
 | GCC 12 -Wno-interference-size | Workaround | Remove at GCC 13 |

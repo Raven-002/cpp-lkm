@@ -1,9 +1,14 @@
 #include "module.hpp"
 
 #include "kalloc.hpp"
-#include "test_resource.hpp"
 
 #include <linux/kernel.h>
+
+class CppKernelModule::Resource
+{
+  public:
+    int id = 0;
+};
 
 CppKernelModule::CppKernelModule()
 {
@@ -12,15 +17,19 @@ CppKernelModule::CppKernelModule()
 
 std::expected<void, ErrorCode> CppKernelModule::init()
 {
-    auto res1 = kalloc<TestResource>();
-    if (!res1)
-        return std::unexpected(res1.error());
-    _resource1 = *res1;
+    auto assign_resource = [](Resource*& target) -> std::expected<void, ErrorCode>
+    {
+        auto allocated = kalloc<Resource>();
+        if (!allocated)
+            return std::unexpected(allocated.error());
+        target = *allocated;
+        return {};
+    };
 
-    auto res2 = kalloc<TestResource>();
-    if (!res2)
-        return std::unexpected(res2.error());
-    _resource2 = *res2;
+    if (auto first = assign_resource(_resource1); !first)
+        return std::unexpected(first.error());
+    if (auto second = assign_resource(_resource2); !second)
+        return std::unexpected(second.error());
 
     _resource1->id = 1;
     _resource2->id = 2;

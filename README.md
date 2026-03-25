@@ -42,7 +42,7 @@ Compiles using a GCC 12.5.x cross-compiler targeting the actual platform
 architecture, but still links against mock headers for CI test validation.
 
 ```bash
-cmake -B build-platform -DBUILD_MODE=platform -DGCC12_CXX=/path/to/g++12
+cmake -B build-platform -DBUILD_MODE=platform -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
 cmake --build build-platform
 ctest --test-dir build-platform -V
 ```
