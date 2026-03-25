@@ -5,6 +5,7 @@
 
 #include <array>
 
+// NOLINTBEGIN(cert-dcl58-cpp)
 namespace std
 {
 void __glibcxx_assert_fail(const char* file, int line, const char* function,
@@ -17,6 +18,7 @@ void __glibcxx_assert_fail(const char* file, int line, const char* function,
     } // Halting execution without calling the bug macro
 }
 } // namespace std
+// NOLINTEND(cert-dcl58-cpp)
 
 #include "cpp_lkm/runtime/module_entry.h"
 

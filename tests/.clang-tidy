@@ -1,8 +1,11 @@
 # Test-only relaxations: inherit repo defaults, then disable checks that are noisy for
-# mocks, injected globals, and kernel-bridge signatures (size + gfp flags).
+# mocks, injected globals, kernel-bridge signatures (size + gfp flags), and test literals.
 InheritParentConfig: true
 Checks:
   - '-bugprone-easily-swappable-parameters'
   - '-cppcoreguidelines-avoid-non-const-global-variables'
   - '-cppcoreguidelines-pro-bounds-array-to-pointer-decay'
   - '-hicpp-no-array-decay'
+  # Literal values are ordinary in unit tests.
+  - '-readability-magic-numbers'
+  - '-cppcoreguidelines-avoid-magic-numbers'

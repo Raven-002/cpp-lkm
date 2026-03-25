@@ -1,5 +1,6 @@
 # Enable all checks; disable only rules that do not apply to this project or cannot be
-# satisfied without fighting required APIs or tooling.
+# satisfied without fighting required APIs or tooling. Test-only relaxations (e.g. magic
+# numbers) live in tests/.clang-tidy; rare file-specific cases use NOLINT in source.
 
 Checks:
   - '*' # enable all checks, then selectively disable below
@@ -14,7 +15,7 @@ Checks:
   - '-google-objc-*'
   - '-llvmlibc-*'
 
-  # Compatibility: C varargs (cpp_printk + mocks).
+  # Compatibility: C varargs (cpp_printk at every call site; kernel-style API).
   - '-cppcoreguidelines-pro-type-vararg'
   - '-hicpp-vararg'
 
@@ -22,18 +23,11 @@ Checks:
   - '-llvm-header-guard'
   - '-portability-avoid-pragma-once'
 
-  # Style: intentional numeric literals.
-  - '-readability-magic-numbers'
-  - '-cppcoreguidelines-avoid-magic-numbers'
-
   # Style: leading return types are project convention.
   - '-modernize-use-trailing-return-type'
 
   # Tooling: include graph not complete; noisy here.
   - '-misc-include-cleaner'
-
-  # Namespace std: libstdc++ assertion hook contract.
-  - '-cert-dcl58-cpp'
 
   # Operator new/delete: delete-only policy in this repo.
   - '-cert-dcl54-cpp'
