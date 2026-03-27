@@ -32,9 +32,6 @@ Checks:
   # Modernize: project does not use C++23 std::println.
   - '-modernize-use-std-print'
 
-  # Ownership: expressed via std::expected + placement new.
-  - '-cppcoreguidelines-owning-memory'
-
   # Anonymous namespace: conflicts with llvm-prefer-static-over-anonymous-namespace.
   - '-misc-use-anonymous-namespace'
 

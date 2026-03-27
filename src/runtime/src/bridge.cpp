@@ -1,4 +1,5 @@
-#include "compat/new_shim.hpp" // IWYU pragma: keep
+#include "compat/gsl_owner.hpp" // IWYU pragma: keep
+#include "compat/new_shim.hpp"  // IWYU pragma: keep
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/module/module.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
@@ -30,7 +31,7 @@ struct alignas(CppKernelModule) ModuleStorage
 };
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
 ModuleStorage g_module_storage{};
-CppKernelModule* g_module = nullptr;
+gsl::owner<CppKernelModule*> g_module = nullptr;
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 static_assert(sizeof(ModuleStorage::bytes) >= sizeof(CppKernelModule),
