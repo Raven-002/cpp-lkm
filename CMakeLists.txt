@@ -89,7 +89,7 @@ else()
         TARGET
         kernel_module
         MODULE_OBJECT
-        MyKernelModule
+        KernelModule
         MODULE_HEADER
         kernel_module/kernel_module.hpp
         KERNEL_INTERFACE
