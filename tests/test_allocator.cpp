@@ -4,6 +4,7 @@
 #include "tests/support/mock_globals.hpp"
 
 #include <cassert>
+#include <cerrno>
 #include <cstdio>
 
 class TestObj
@@ -83,7 +84,7 @@ static void test_kalloc_fail()
     g_mock_kmalloc_fail = 1;
     auto ptr = kalloc<TestObj>(99);
     assert(!ptr.has_value());
-    assert(ptr.error() == ErrorCode::AllocFail);
+    assert(ptr.error() == -ENOMEM);
 }
 
 static void test_kalloc_array_fail()
@@ -92,7 +93,7 @@ static void test_kalloc_array_fail()
     g_mock_kmalloc_fail = 1;
     auto arr = kalloc_array<int>(4);
     assert(!arr.has_value());
-    assert(arr.error() == ErrorCode::AllocFail);
+    assert(arr.error() == -ENOMEM);
 }
 
 static void test_kalloc_array_overflow_guard()
@@ -100,7 +101,7 @@ static void test_kalloc_array_overflow_guard()
     reset_mock_state();
     auto arr = kalloc_array<int>(static_cast<size_t>(-1));
     assert(!arr.has_value());
-    assert(arr.error() == ErrorCode::AllocFail);
+    assert(arr.error() == -ENOMEM);
 }
 
 // ---- kfree_obj ----

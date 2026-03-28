@@ -4,6 +4,7 @@
 #include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
+#include <cerrno>
 #include <expected>
 #include <limits>
 #include <type_traits>
@@ -24,13 +25,13 @@
     void* mem = cpp_kmalloc(bytes, current_gfp_flags());
     if (mem == nullptr) [[unlikely]]
     {
-        return std::unexpected(ErrorCode::AllocFail);
+        return std::unexpected(-ENOMEM);
     }
     return mem;
 }
 
 // Allocate memory for one T, construct it with args, and return a pointer.
-// Returns ErrorCode::AllocFail if kmalloc returns null.
+// Returns -ENOMEM if kmalloc returns null.
 // The caller owns the returned pointer and must free it with kfree_obj<T>().
 template <typename T, typename... Args> [[nodiscard]] Result<T*> kalloc(Args&&... args) noexcept
 {
@@ -49,13 +50,13 @@ template <typename T> [[nodiscard]] Result<T*> kalloc_array(size_t count) noexce
                   "kalloc_array requires trivially constructible types; use kalloc() for others");
     if (count == 0)
     {
-        return std::unexpected(ErrorCode::AllocFail);
+        return std::unexpected(-ENOMEM);
     }
 
     constexpr size_t max_size = std::numeric_limits<size_t>::max();
     if (count > (max_size / sizeof(T)))
     {
-        return std::unexpected(ErrorCode::AllocFail);
+        return std::unexpected(-ENOMEM);
     }
 
     auto mem = kmalloc_or_error(sizeof(T) * count);

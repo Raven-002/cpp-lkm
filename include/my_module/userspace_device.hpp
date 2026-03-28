@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cpp_lkm/common/error.hpp"
+#include "my_module/errors.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
 #include <array>

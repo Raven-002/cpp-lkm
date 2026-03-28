@@ -69,7 +69,7 @@ Result<void> UserspaceDevice::init()
     if (err != 0)
     {
         _registered = false;
-        return std::unexpected(ErrorCode::CharDevRegFail);
+        return std::unexpected(to_errno(MyError::CharDevRegFail));
     }
     _registered = true;
     return {};

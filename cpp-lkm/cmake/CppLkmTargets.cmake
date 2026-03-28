@@ -22,7 +22,7 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 #
 # Creates an INTERFACE target with:
 #   - freestanding C++23 compiler flags
-#   - framework include directories (error.hpp, kalloc.hpp, kernel_api.h, ...)
+#   - framework include directories (error.hpp Result alias, kalloc.hpp, kernel_api.h, ...)
 #   - kernel header directories (if the kernel tree exists)
 #   - kernel ABI compile options (when ABI_MODE is "ko")
 # ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 // tests/test_userspace_device.cpp
 // Host tests for UserspaceDevice registration and mock read/write path.
-#include "cpp_lkm/common/error.hpp"
+#include "my_module/errors.hpp"
 #include "cpp_lkm/runtime/module_entry.h"
 #include "tests/support/mock_chardev.hpp"
 #include "tests/support/mock_globals.hpp"
@@ -27,7 +27,7 @@ static void test_chardev_reg_fail_unwinds_module()
 {
     reset_mock_state();
     g_mock_chardev_reg_fail = 1;
-    assert(cpp_module_init() == to_errno(ErrorCode::CharDevRegFail));
+    assert(cpp_module_init() == to_errno(MyError::CharDevRegFail));
     assert(g_mock_chardev_registered == 0);
     cpp_module_exit();
     assert(g_mock_cpp_destructed_count == 1);

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/runtime/kernel_module.hpp"
 #include "my_module/userspace_device.hpp"
 

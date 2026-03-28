@@ -1,6 +1,7 @@
 #include "cpp_lkm/common/error.hpp"
 
 #include <cassert>
+#include <cerrno>
 #include <cstdio>
 #include <expected>
 
@@ -14,9 +15,9 @@ static void test_expected_value()
 
 static void test_expected_error()
 {
-    Result<int> err_result = std::unexpected(ErrorCode::AllocFail);
+    Result<int> err_result = std::unexpected(-ENOMEM);
     assert(!err_result.has_value());
-    assert(err_result.error() == ErrorCode::AllocFail);
+    assert(err_result.error() == -ENOMEM);
     printf("test_expected_error passed\n");
 }
 

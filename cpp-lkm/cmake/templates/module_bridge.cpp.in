@@ -5,7 +5,6 @@
 
 #include "compat/gsl_owner.hpp"  // IWYU pragma: keep
 #include "compat/new_shim.hpp"   // IWYU pragma: keep
-#include "cpp_lkm/common/error.hpp"
 #include "cpp_lkm/runtime/kernel_module.hpp"
 #include "cpp_lkm/runtime/module_entry.h"
 #include "cpp_lkm/runtime/kernel_api.h"
@@ -59,7 +58,7 @@ extern "C"
         {
             g_module->~IKernelModule();
             g_module = nullptr;
-            return to_errno(res.error());
+            return res.error();
         }
         return 0;
     }

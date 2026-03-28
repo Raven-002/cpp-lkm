@@ -1,6 +1,6 @@
 // tests/test_init.cpp
 // Tests for CppKernelModule two-phase initialization and cleanup.
-#include "cpp_lkm/common/error.hpp"
+#include <cerrno>
 #include "cpp_lkm/runtime/module_entry.h"
 #include "tests/support/mock_globals.hpp"
 
@@ -26,7 +26,7 @@ static void test_alloc_fail_in_init()
     reset_mock_state();
     g_mock_kmalloc_fail = 1;
     const int res = cpp_module_init();
-    assert(res == to_errno(ErrorCode::AllocFail));
+    assert(res == -ENOMEM);
     assert(g_mock_cpp_constructed_count == 1);
     assert(g_mock_cpp_initialized_count == 0);
     assert(g_mock_cpp_destructed_count == 1);
@@ -39,7 +39,7 @@ static void test_partial_init_cleanup()
     reset_mock_state();
     g_mock_kmalloc_fail_after = 2; // Second allocation (resource2) fails
     const int res = cpp_module_init();
-    assert(res == to_errno(ErrorCode::AllocFail));
+    assert(res == -ENOMEM);
     assert(g_mock_cpp_constructed_count == 1);
     assert(g_mock_cpp_initialized_count == 0);
     assert(g_mock_cpp_destructed_count == 1);
@@ -66,12 +66,6 @@ static void test_destructor_print()
     assert(g_mock_cpp_destructed_count == 1);
 }
 
-static void test_errno_mapping()
-{
-    static_assert(to_errno(ErrorCode::None) == 0);
-    static_assert(to_errno(ErrorCode::AllocFail) == -12);
-}
-
 extern "C" int main()
 {
     test_happy_path();
@@ -79,7 +73,6 @@ extern "C" int main()
     test_partial_init_cleanup();
     test_exit_after_failed_init();
     test_destructor_print();
-    test_errno_mapping();
     printf("All init tests passed!\n");
     return 0;
 }
