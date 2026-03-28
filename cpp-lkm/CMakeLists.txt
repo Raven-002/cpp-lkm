@@ -25,6 +25,8 @@ target_include_directories(
     PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" # cpp_lkm/common, cpp_lkm/runtime
            "${CMAKE_CURRENT_SOURCE_DIR}/.."       # compat/
 )
+# Headers under cpp-lkm/include/ infer flags from this TU in clangd; need C++23 for std::expected.
+target_compile_features(cpp_lkm_runtime PUBLIC cxx_std_23)
 # Runtime itself does not carry ABI/kernel flags — those come from the interface
 # target that the consumer attaches.
 
