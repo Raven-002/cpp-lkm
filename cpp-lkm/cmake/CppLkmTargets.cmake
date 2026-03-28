@@ -94,6 +94,9 @@ function(cpp_lkm_add_ko_target)
         set(_CLAT_KERNEL_INTERFACE "${_CLAT_MODULE_NAME}.iface")
     endif()
 
+    # Ensure runtime objects are built with kernel/freestanding flags in ko mode.
+    target_link_libraries(cpp_lkm_runtime PUBLIC ${_CLAT_KERNEL_INTERFACE})
+
     # Generate and build the bridge
     cpp_lkm_generate_module_bridge(
         MODULE_NAME "${_CLAT_MODULE_NAME}"

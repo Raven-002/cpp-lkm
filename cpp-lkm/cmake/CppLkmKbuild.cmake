@@ -38,14 +38,18 @@ function(cpp_lkm_add_kbuild_stage)
     file(MAKE_DIRECTORY "${_stage_dir}")
 
     # The Kbuild Makefile links:
-    #   <mod>_linux_entry.o — C file compiled by Kbuild (no C++ ABI issues)
+    #   <mod>_linux_entry.o  — C file compiled by Kbuild (module metadata + init/exit)
+    #   <mod>_linux_bridge.o — C file compiled by Kbuild (printk/kmalloc/chardev wrappers)
     #   lib<mod>_bridge.a   — bridge OBJECT library archived for Kbuild
     #   lib<mod>.a          — consumer STATIC library
     #   lib<mod>_runtime.a  — framework runtime (operator_delete, etc.)
     set(_entry_src_in "${CPP_LKM_DIR}/cmake/templates/linux_entry.c.in")
     set(_entry_src "${_stage_dir}/${_mod}_linux_entry.c")
+    set(_kernel_bridge_src_in "${CPP_LKM_DIR}/cmake/templates/linux_bridge.c.in")
+    set(_kernel_bridge_src "${_stage_dir}/${_mod}_linux_bridge.c")
     set(CPP_LKM_MODULE_NAME "${_mod}")
     configure_file("${_entry_src_in}" "${_entry_src}" @ONLY)
+    configure_file("${_kernel_bridge_src_in}" "${_kernel_bridge_src}" @ONLY)
 
     set(_bridge_archive "lib${_mod}_bridge.a")
     set(_module_archive "lib${_mod}.a")
@@ -55,7 +59,7 @@ function(cpp_lkm_add_kbuild_stage)
         CONCAT
         _makefile_content
         "obj-m += ${_mod}.o\n"
-        "${_mod}-y := ${_mod}_linux_entry.o ${_bridge_archive} ${_module_archive} ${_runtime_archive}\n"
+        "${_mod}-y := ${_mod}_linux_entry.o ${_mod}_linux_bridge.o ${_bridge_archive} ${_module_archive} ${_runtime_archive}\n"
     )
     file(GENERATE OUTPUT "${_stage_dir}/Makefile" CONTENT "${_makefile_content}")
 
@@ -81,7 +85,8 @@ function(cpp_lkm_add_kbuild_stage)
             ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${_KB_RUNTIME_LIB}>"
             "${_stage_dir}/${_runtime_archive}"
         # Invoke Kbuild
-        COMMAND make -C "${_kdir}" M="${_stage_dir}" modules
+        # Avoid M="path" with VERBATIM: sh leaves quotes in M and Kbuild fails.
+        COMMAND make -C "${_kdir}" M=${_stage_dir} modules
         # Copy final .ko up to the CMake binary dir
         COMMAND
             ${CMAKE_COMMAND} -E copy "${_stage_dir}/${_mod}.ko"

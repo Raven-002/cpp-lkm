@@ -128,7 +128,7 @@ ko:
   cmake --build --preset host-ko
 
 smoke: ko
-  ko_path="builds/host-ko/my_kernel_module.ko" && \
+  @ko_path="builds/host-ko/my_kernel_module.ko" && \
   if [[ ! -f "$ko_path" ]]; then echo "Missing $ko_path. Build failed?"; exit 1; fi && \
   name="my_kernel_module" && \
   before_epoch=$(date +%s) && \
@@ -136,12 +136,12 @@ smoke: ko
   sudo insmod "$ko_path" || { echo "insmod failed"; exit 1; } && \
   since_sec=$(( $(date +%s) - before_epoch + 1 )) && \
   echo "== dmesg (since ${since_sec}s ago, filtered) ==" && \
-  sudo dmesg --color=never -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p' && \
+  sudo dmesg --color=always -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p' && \
   echo "== rmmod ==" && \
   sudo rmmod "$name" || { echo "rmmod failed"; exit 1; } && \
   since_sec=$(( $(date +%s) - before_epoch + 1 )) && \
   echo "== dmesg (since ${since_sec}s ago, filtered) ==" && \
-  sudo dmesg --color=never -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p'
+  sudo dmesg --color=always -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p'
 
 # Attempts to remove the module if it is loaded (useful after failed smoke).
 smoke-clean:
