@@ -10,9 +10,13 @@
 # include dirs for MODULE_HEADER lookup )
 
 function(cpp_lkm_gen_host_bridge)
-    set(oneValueArgs MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE)
+    set(oneValueArgs MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE TARGET)
     set(multiValueArgs MODULE_INCLUDE_DIRS)
     cmake_parse_arguments(_HB "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT _HB_TARGET)
+        set(_HB_TARGET "${_HB_MODULE_NAME}")
+    endif()
 
     set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/cpp_lkm_bridge_${_HB_MODULE_NAME}")
     file(MAKE_DIRECTORY "${_gen_dir}")
@@ -37,6 +41,6 @@ function(cpp_lkm_gen_host_bridge)
     target_link_libraries(${_bridge_obj_target} PUBLIC cpp_lkm_runtime)
 
     # Fold the bridge objects into the consumer STATIC library so that anything linking
-    # my_kernel_module gets cpp_module_init/exit.
-    target_sources(${_HB_MODULE_NAME} PRIVATE $<TARGET_OBJECTS:${_bridge_obj_target}>)
+    # it gets cpp_module_init/exit.
+    target_sources(${_HB_TARGET} PRIVATE $<TARGET_OBJECTS:${_bridge_obj_target}>)
 endfunction()

@@ -42,11 +42,7 @@ cpp_lkm_create_kernel_interface(
 # ---------------------------------------------------------------------------
 # Consumer STATIC library — the actual module implementation.
 # ---------------------------------------------------------------------------
-add_library(my_kernel_module STATIC src/my_kernel_module.cpp src/userspace_device.cpp)
-
-target_include_directories(my_kernel_module PUBLIC "${CMAKE_SOURCE_DIR}/include")
-
-target_link_libraries(my_kernel_module PUBLIC my_kernel_module.iface cpp_lkm_runtime)
+add_subdirectory(src)
 
 # ---------------------------------------------------------------------------
 # BUG() gate — verify no BUG() calls in source.
@@ -57,7 +53,7 @@ add_custom_target(
             ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
     VERBATIM
 )
-add_dependencies(my_kernel_module check_no_bug)
+add_dependencies(kernel_module check_no_bug)
 
 # ---------------------------------------------------------------------------
 # Bridge: generates and compiles cpp_module_init/cpp_module_exit.
@@ -73,31 +69,33 @@ include(cmake/testing/GenModuleBridge.cmake)
 if(BUILD_KO)
     cpp_lkm_add_ko_target(
         TARGET
-        my_kernel_module
+        kernel_module
         MODULE_NAME
         my_kernel_module
         MODULE_OBJECT
         MyKernelModule
         MODULE_HEADER
-        my_module/my_kernel_module.hpp
+        kernel_module/my_kernel_module.hpp
         KERNEL_INTERFACE
         my_kernel_module.iface
         MODULE_INCLUDE_DIRS
-        "${CMAKE_SOURCE_DIR}/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
         ALL
     )
 else()
     cpp_lkm_gen_host_bridge(
         MODULE_NAME
         my_kernel_module
+        TARGET
+        kernel_module
         MODULE_OBJECT
         MyKernelModule
         MODULE_HEADER
-        my_module/my_kernel_module.hpp
+        kernel_module/my_kernel_module.hpp
         KERNEL_INTERFACE
         my_kernel_module.iface
         MODULE_INCLUDE_DIRS
-        "${CMAKE_SOURCE_DIR}/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
     )
 endif()
 
@@ -117,7 +115,7 @@ if(NOT BUILD_KO)
     foreach(test_src ${TEST_SRCS})
         get_filename_component(test_name ${test_src} NAME_WE)
         add_executable(${test_name} ${test_src} ${TEST_MOCK_SRC})
-        target_link_libraries(${test_name} PRIVATE my_kernel_module)
+        target_link_libraries(${test_name} PRIVATE kernel_module)
         target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
         add_test(NAME ${test_name} COMMAND ${test_name})
     endforeach()

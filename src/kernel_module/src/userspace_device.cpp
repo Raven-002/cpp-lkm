@@ -1,4 +1,4 @@
-#include "my_module/userspace_device.hpp"
+#include "kernel_module/userspace_device.hpp"
 
 #include <cstring>
 #include <string_view>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cpp_lkm/runtime/kernel_module.hpp"
-#include "my_module/userspace_device.hpp"
+#include "kernel_module/userspace_device.hpp"
 
 // Example kernel module implementation.
 // Implements IKernelModule (two-phase init: trivial ctor + fallible init()).

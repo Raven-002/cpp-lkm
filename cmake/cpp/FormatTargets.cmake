@@ -6,11 +6,9 @@ if(CLANG_FORMAT_EXE)
     file(
         GLOB_RECURSE
         FORMAT_SOURCES
-        "${CMAKE_SOURCE_DIR}/src/*.cpp"
-        "${CMAKE_SOURCE_DIR}/src/*.h"
-        "${CMAKE_SOURCE_DIR}/src/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*.hpp"
-        "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_SOURCE_DIR}/src/**/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/**/*.h"
+        "${CMAKE_SOURCE_DIR}/src/**/*.hpp"
         "${CMAKE_SOURCE_DIR}/cpp-lkm/src/*.cpp"
         "${CMAKE_SOURCE_DIR}/cpp-lkm/include/*.hpp"
         "${CMAKE_SOURCE_DIR}/cpp-lkm/include/*.h"
@@ -62,6 +60,7 @@ if(CMAKE_FORMAT_EXE)
         GLOB_RECURSE
         CMAKE_SOURCES
         "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
+        "${CMAKE_SOURCE_DIR}/src/CMakeLists.txt"
         "${CMAKE_SOURCE_DIR}/cmake/*.cmake"
         "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
         "${CMAKE_SOURCE_DIR}/cpp-lkm/CMakeLists.txt"
@@ -88,6 +87,7 @@ if(CMAKE_LINT_EXE)
             GLOB_RECURSE
             CMAKE_SOURCES
             "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
+            "${CMAKE_SOURCE_DIR}/src/CMakeLists.txt"
             "${CMAKE_SOURCE_DIR}/cmake/*.cmake"
             "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
             "${CMAKE_SOURCE_DIR}/cpp-lkm/CMakeLists.txt"

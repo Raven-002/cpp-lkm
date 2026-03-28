@@ -46,7 +46,7 @@ macro(add_negative_compile_test TARGET_NAME SOURCE_FILE)
             ${CMAKE_SOURCE_DIR}/cmake/testing/RunNegativeCompileTest.cmake
         DEPENDS ${SOURCE_FILE}
     )
-    add_dependencies(my_kernel_module ${TARGET_NAME})
+    add_dependencies(kernel_module ${TARGET_NAME})
 endmacro()
 
 macro(add_negative_link_test TARGET_NAME SOURCE_FILE)
@@ -56,8 +56,8 @@ macro(add_negative_link_test TARGET_NAME SOURCE_FILE)
         COMMAND
             ${CMAKE_COMMAND} -DCOMPILER=${CMAKE_CXX_COMPILER} "-DCXX_FLAGS=${_neg_cxx_flags}"
             "-DLINK_FLAGS=-Wl,--no-undefined" -DSOURCE=${SOURCE_FILE}
-            "-DLIB_TO_LINK=$<TARGET_FILE:my_kernel_module>" -P
+            "-DLIB_TO_LINK=$<TARGET_FILE:kernel_module>" -P
             ${CMAKE_SOURCE_DIR}/cmake/testing/RunNegativeLinkTest.cmake
-        DEPENDS ${SOURCE_FILE} my_kernel_module
+        DEPENDS ${SOURCE_FILE} kernel_module
     )
 endmacro()
