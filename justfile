@@ -16,12 +16,9 @@ set positional-arguments := true
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 # ------ Build Configuration ------
-BUILD_DIR := "build"
-# Kernel module (.ko) build tree. Keep this separate from host tests so CMake
-# reconfigure does not flip BUILD_KO unexpectedly.
-KO_BUILD_DIR := "build-ko"
-BUILD_MODE := "host"
-BUILD_KO := "OFF" # Build the real .ko via Kbuild (default off in host mode)
+# Preset names match CMakePresets.json configurePresets.
+# Use CMAKE_PRESET=platform just build  to switch the active preset.
+CMAKE_PRESET := "host"
 KBUILD_DIR := ""
 
 # ------ Core Targets ------
@@ -29,7 +26,7 @@ default:
   @just --list
 
 clean:
-  rm -rf "{{BUILD_DIR}}" "{{KO_BUILD_DIR}}"
+  rm -rf builds
 
 setup-dev-env:
   if ! command -v uv >/dev/null 2>&1; then echo "uv not found. Install from https://docs.astral.sh/uv/" >&2; exit 2; fi && \
@@ -41,34 +38,30 @@ setup-dev-env:
   "$bun" install
 
 configure:
-  if [[ -n "{{KBUILD_DIR}}" ]]; then \
-    cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO="{{BUILD_KO}}" -DKBUILD_DIR="{{KBUILD_DIR}}"; \
-  else \
-    cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO="{{BUILD_KO}}"; \
-  fi
+  cmake --preset "{{CMAKE_PRESET}}"
 
 build: configure
-  cmake --build "{{BUILD_DIR}}" -j
+  cmake --build --preset "{{CMAKE_PRESET}}"
 
 # Regenerates Graphviz output for CMake targets (PUBLIC/INTERFACE/PRIVATE link edges).
-# Requires configure first; outputs under BUILD_DIR. Install graphviz for SVG.
+# Requires configure first; outputs under builds/host. Install graphviz for SVG.
 cmake-graph: configure
-  cmake --graphviz="{{BUILD_DIR}}/cmake-deps.dot" -S . -B "{{BUILD_DIR}}" && \
+  cmake --graphviz="builds/host/cmake-deps.dot" -S . -B builds/host && \
   if command -v dot >/dev/null 2>&1; then \
-    dot -Tsvg "{{BUILD_DIR}}/cmake-deps.dot" -o "{{BUILD_DIR}}/cmake-deps.svg" && \
-    echo "Wrote {{BUILD_DIR}}/cmake-deps.dot and {{BUILD_DIR}}/cmake-deps.svg"; \
+    dot -Tsvg "builds/host/cmake-deps.dot" -o "builds/host/cmake-deps.svg" && \
+    echo "Wrote builds/host/cmake-deps.dot and builds/host/cmake-deps.svg"; \
   else \
-    echo "Wrote {{BUILD_DIR}}/cmake-deps.dot (install graphviz for SVG: dot -Tsvg …)"; \
+    echo "Wrote builds/host/cmake-deps.dot (install graphviz for SVG: dot -Tsvg …)"; \
   fi
 
 test: build
-  ctest --test-dir "{{BUILD_DIR}}" -V
+  ctest --preset "{{CMAKE_PRESET}}"
 
 # ------ QA: Format Checks (Read-Only) ------
 qa-format: qa-format-cpp qa-format-cmake
 
 qa-format-cpp: configure
-  cmake --build "{{BUILD_DIR}}" --target format-check
+  cmake --build --preset "{{CMAKE_PRESET}}" --target format-check
 
 qa-format-cmake:
   scripts/cmake-format-check.sh
@@ -77,12 +70,11 @@ qa-format-cmake:
 qa-lint: qa-lint-cpp qa-lint-markdown
   - just qa-lint-cmake
 
-qa-lint-cpp:
+qa-lint-cpp: configure
   if ! command -v clang-tidy >/dev/null 2>&1; then echo "clang-tidy not found. Install it (e.g. clang-tools-extra) to run lint."; exit 2; fi && \
-  cmake -B "{{BUILD_DIR}}" -DBUILD_MODE="{{BUILD_MODE}}" -DBUILD_KO=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && \
   files="$(bash scripts/clang-tidy-files.sh || true)" && \
   if [[ -z "$files" ]]; then echo "No files found to lint."; exit 0; fi && \
-  clang-tidy -p "{{BUILD_DIR}}" $files
+  clang-tidy -p "builds/{{CMAKE_PRESET}}" $files
 
 qa-lint-markdown:
   bash scripts/markdownlint.sh
@@ -100,7 +92,7 @@ qa-fix: qa-fix-format qa-fix-lint
 qa-fix-format: qa-fix-format-cpp qa-fix-format-cmake
 
 qa-fix-format-cpp: configure
-  cmake --build "{{BUILD_DIR}}" --target format
+  cmake --build --preset "{{CMAKE_PRESET}}" --target format
 
 qa-fix-format-cmake:
   scripts/cmake-format-fix.sh
@@ -125,14 +117,18 @@ qa-fix-lint-cmake:
 # Requires sudo, kernel-devel, and SecureBoot policies permitting module load.
 #
 # Useful overrides:
-#   just KO_BUILD_DIR=build-ko-custom smoke
 #   just KBUILD_DIR=/path/to/kernel/build smoke
 
 ko:
-  just BUILD_KO=ON BUILD_DIR="{{KO_BUILD_DIR}}" BUILD_MODE="{{BUILD_MODE}}" KBUILD_DIR="{{KBUILD_DIR}}" build
+  if [[ -n "{{KBUILD_DIR}}" ]]; then \
+    cmake --preset host-ko -D KBUILD_DIR="{{KBUILD_DIR}}"; \
+  else \
+    cmake --preset host-ko; \
+  fi && \
+  cmake --build --preset host-ko
 
 smoke: ko
-  ko_path="{{KO_BUILD_DIR}}/my_kernel_module.ko" && \
+  ko_path="builds/host-ko/my_kernel_module.ko" && \
   if [[ ! -f "$ko_path" ]]; then echo "Missing $ko_path. Build failed?"; exit 1; fi && \
   name="my_kernel_module" && \
   before_epoch=$(date +%s) && \

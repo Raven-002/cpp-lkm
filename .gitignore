@@ -1,3 +1,4 @@
+builds/
 build*/
 *.o
 *.a
@@ -6,3 +7,4 @@ compile_commands.json
 .DS_Store
 .venv/
 node_modules/
+CMakeUserPresets.json

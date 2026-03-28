@@ -1,0 +1,80 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 20, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "host",
+      "displayName": "Host (tests, no .ko)",
+      "description": "Clang/GCC host build; compiles and runs all tests.",
+      "binaryDir": "${sourceDir}/builds/host",
+      "cacheVariables": {
+        "BUILD_MODE": "host",
+        "BUILD_KO": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "platform",
+      "displayName": "Platform (GCC 12.5.x, no .ko)",
+      "description": "Strict GCC 12.5.x toolchain check; requires CMAKE_CXX_COMPILER to point at g++-12.5.",
+      "binaryDir": "${sourceDir}/builds/platform",
+      "cacheVariables": {
+        "BUILD_MODE": "platform",
+        "BUILD_KO": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "ci",
+      "displayName": "CI (GCC 12.5.x, strict)",
+      "description": "Same toolchain requirements as platform; intended for CI pipelines.",
+      "binaryDir": "${sourceDir}/builds/ci",
+      "cacheVariables": {
+        "BUILD_MODE": "ci",
+        "BUILD_KO": "OFF",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "host-ko",
+      "displayName": "Host .ko (Kbuild)",
+      "description": "Builds the real kernel module via Kbuild. Pass -D KBUILD_DIR=... to override the kernel build tree.",
+      "binaryDir": "${sourceDir}/builds/host-ko",
+      "cacheVariables": {
+        "BUILD_MODE": "host",
+        "BUILD_KO": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "host",
+      "configurePreset": "host",
+      "jobs": 0
+    },
+    {
+      "name": "platform",
+      "configurePreset": "platform",
+      "jobs": 0
+    },
+    {
+      "name": "ci",
+      "configurePreset": "ci",
+      "jobs": 0
+    },
+    {
+      "name": "host-ko",
+      "configurePreset": "host-ko",
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "host",
+      "configurePreset": "host",
+      "output": {
+        "verbosity": "verbose"
+      }
+    }
+  ]
+}
