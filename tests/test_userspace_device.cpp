@@ -1,7 +1,7 @@
 // tests/test_userspace_device.cpp
 // Host tests for UserspaceDevice registration and mock read/write path.
-#include "my_module/errors.hpp"
 #include "cpp_lkm/runtime/module_entry.h"
+#include "my_module/errors.hpp"
 #include "tests/support/mock_chardev.hpp"
 #include "tests/support/mock_globals.hpp"
 

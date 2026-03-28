@@ -1,19 +1,13 @@
-# GenModuleBridge.cmake
-# Generates and compiles the module bridge (cpp_module_init / cpp_module_exit)
+# GenModuleBridge.cmake Generates and compiles the module bridge (cpp_module_init / cpp_module_exit)
 # for use in host-mode tests and as part of the consumer STATIC library.
 #
-# In BUILD_KO=ON mode the bridge is also compiled by cpp_lkm_add_ko_target as
-# an OBJECT target; in host mode we compile it here and link it into the
-# STATIC lib so tests can call cpp_module_init/exit directly.
+# In BUILD_KO=ON mode the bridge is also compiled by cpp_lkm_add_ko_target as an OBJECT target; in
+# host mode we compile it here and link it into the STATIC lib so tests can call
+# cpp_module_init/exit directly.
 #
-# Usage:
-#   cpp_lkm_gen_host_bridge(
-#     MODULE_NAME      <name>
-#     MODULE_OBJECT    <ClassName>
-#     MODULE_HEADER    <include/path.hpp>
-#     KERNEL_INTERFACE <iface-target>
-#     MODULE_INCLUDE_DIRS <dir1> [<dir2> ...]   # include dirs for MODULE_HEADER lookup
-#   )
+# Usage: cpp_lkm_gen_host_bridge( MODULE_NAME      <name> MODULE_OBJECT    <ClassName> MODULE_HEADER
+# <include/path.hpp> KERNEL_INTERFACE <iface-target> MODULE_INCLUDE_DIRS <dir1> [<dir2> ...]   #
+# include dirs for MODULE_HEADER lookup )
 
 function(cpp_lkm_gen_host_bridge)
     set(oneValueArgs MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE)
@@ -28,9 +22,7 @@ function(cpp_lkm_gen_host_bridge)
     set(CPP_LKM_MODULE_HEADER "${_HB_MODULE_HEADER}")
 
     set(_bridge_src "${_gen_dir}/module_bridge.cpp")
-    configure_file(
-        "${CPP_LKM_DIR}/cmake/templates/module_bridge.cpp.in" "${_bridge_src}" @ONLY
-    )
+    configure_file("${CPP_LKM_DIR}/cmake/templates/module_bridge.cpp.in" "${_bridge_src}" @ONLY)
 
     set(_bridge_obj_target "${_HB_MODULE_NAME}.bridge")
     add_library(${_bridge_obj_target} OBJECT "${_bridge_src}")
@@ -44,9 +36,7 @@ function(cpp_lkm_gen_host_bridge)
     # Runtime for operator delete etc.
     target_link_libraries(${_bridge_obj_target} PUBLIC cpp_lkm_runtime)
 
-    # Fold the bridge objects into the consumer STATIC library so that
-    # anything linking my_kernel_module gets cpp_module_init/exit.
-    target_sources(
-        ${_HB_MODULE_NAME} PRIVATE $<TARGET_OBJECTS:${_bridge_obj_target}>
-    )
+    # Fold the bridge objects into the consumer STATIC library so that anything linking
+    # my_kernel_module gets cpp_module_init/exit.
+    target_sources(${_HB_MODULE_NAME} PRIVATE $<TARGET_OBJECTS:${_bridge_obj_target}>)
 endfunction()

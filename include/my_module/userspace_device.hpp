@@ -1,7 +1,7 @@
 #pragma once
 
-#include "my_module/errors.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
+#include "my_module/errors.hpp"
 
 #include <array>
 #include <cstddef>
