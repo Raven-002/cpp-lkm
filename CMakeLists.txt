@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cpp_kernel_module LANGUAGES CXX)
+project(my_kernel_module LANGUAGES CXX C)
 if(POLICY CMP0127)
     cmake_policy(SET CMP0127 NEW)
 endif()
@@ -8,69 +8,130 @@ set(BUILD_MODE
     "host"
     CACHE STRING "Build mode: host, platform, ci"
 )
-# Default OFF so host test builds do not require kernel-devel. Explicit -DBUILD_KO=ON (e.g. just ko,
-# build-ko/) enables Kbuild regardless of BUILD_MODE.
+# Default OFF so host test builds do not require kernel-devel. Pass -DBUILD_KO=ON
+# (e.g. just ko) to build the real .ko via Kbuild.
 option(BUILD_KO "Build the real .ko via Kbuild" OFF)
 
-include(cmake/kernel/ToolchainCheck.cmake)
-include(cmake/cpp/CxxFlags.cmake)
+# ---------------------------------------------------------------------------
+# Load the cpp-lkm framework (defines cpp_lkm_create_kernel_interface and
+# cpp_lkm_add_ko_target, and creates the cpp_lkm_runtime STATIC target).
+# ---------------------------------------------------------------------------
+add_subdirectory(cpp-lkm)
+
 include(cmake/cpp/CheckExpected.cmake)
+include(cmake/kernel/ToolchainCheck.cmake)
 
-add_library(libkernel INTERFACE)
-target_compile_options(libkernel INTERFACE ${LIBKERNEL_CXX_FLAGS})
-target_include_directories(libkernel INTERFACE ${LIBKERNEL_INCLUDE_DIRS})
+# ---------------------------------------------------------------------------
+# Kernel interface target — carries all compiler flags, include paths, and
+# kernel definitions required to compile kernel module C++ code.
+# In host mode we omit ABI flags so the same code compiles for testing.
+# ---------------------------------------------------------------------------
+if(BUILD_KO)
+    set(_abi_mode ko)
+else()
+    set(_abi_mode "")
+endif()
 
-include(cmake/kernel/KernelHeaders.cmake)
+cpp_lkm_create_kernel_interface(
+    my_kernel_module.iface
+    MODULE_NAME my_kernel_module
+    ABI_MODE "${_abi_mode}"
+)
 
-include(cmake/kernel/KernelAbiFlags.cmake)
-include(cmake/kernel/KbuildModule.cmake)
+# ---------------------------------------------------------------------------
+# Consumer STATIC library — the actual module implementation.
+# ---------------------------------------------------------------------------
+add_library(
+    my_kernel_module STATIC
+    src/my_kernel_module.cpp
+    src/userspace_device.cpp
+)
 
-add_subdirectory(src/common)
-add_subdirectory(src/runtime)
-add_subdirectory(src/module)
+target_include_directories(my_kernel_module PUBLIC "${CMAKE_SOURCE_DIR}/include")
 
-add_library(kernel_module STATIC $<TARGET_OBJECTS:kernel_runtime> $<TARGET_OBJECTS:module_core>)
-target_link_libraries(kernel_module PUBLIC libkernel kernel_runtime module_core)
+target_link_libraries(my_kernel_module PUBLIC my_kernel_module.iface cpp_lkm_runtime)
 
+# ---------------------------------------------------------------------------
+# BUG() gate — verify no BUG() calls in source.
+# ---------------------------------------------------------------------------
 add_custom_target(
     check_no_bug
-    COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/src -P
-            ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
+    COMMAND
+        ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/src -P
+        ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
     VERBATIM
 )
-add_dependencies(kernel_module check_no_bug)
+add_dependencies(my_kernel_module check_no_bug)
 
+# ---------------------------------------------------------------------------
+# Bridge: generates and compiles cpp_module_init/cpp_module_exit.
+#
+#   HOST mode: cpp_lkm_gen_host_bridge() creates my_kernel_module.bridge and
+#              folds it into the static lib so tests can call cpp_module_init.
+#
+#   KO mode:   cpp_lkm_add_ko_target() internally calls cpp_lkm_generate_module_bridge()
+#              which also creates my_kernel_module.bridge; only one must run.
+# ---------------------------------------------------------------------------
+include(cmake/testing/GenModuleBridge.cmake)
+
+if(BUILD_KO)
+    cpp_lkm_add_ko_target(
+        TARGET my_kernel_module
+        MODULE_NAME my_kernel_module
+        MODULE_OBJECT MyKernelModule
+        MODULE_HEADER my_module/my_kernel_module.hpp
+        KERNEL_INTERFACE my_kernel_module.iface
+        MODULE_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include"
+        ALL
+    )
+else()
+    cpp_lkm_gen_host_bridge(
+        MODULE_NAME my_kernel_module
+        MODULE_OBJECT MyKernelModule
+        MODULE_HEADER my_module/my_kernel_module.hpp
+        KERNEL_INTERFACE my_kernel_module.iface
+        MODULE_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include"
+    )
+endif()
+
+# ---------------------------------------------------------------------------
+# Host tests (only when NOT BUILD_KO — separate build tree).
+# ---------------------------------------------------------------------------
 enable_testing()
 include(cmake/testing/NegativeCompileTest.cmake)
 
-set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
-              tests/test_userspace_device.cpp
-)
-# mock_kernel_bridge.cpp provides host-mode kernel API stubs (state + bridge).
-set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
-
 if(NOT BUILD_KO)
+    set(TEST_SRCS
+        tests/test_init.cpp
+        tests/test_allocator.cpp
+        tests/test_compat.cpp
+        tests/test_userspace_device.cpp
+    )
+    # mock_kernel_bridge.cpp provides host-mode kernel API stubs.
+    set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
+
     foreach(test_src ${TEST_SRCS})
         get_filename_component(test_name ${test_src} NAME_WE)
         add_executable(${test_name} ${test_src} ${TEST_MOCK_SRC})
-        target_link_libraries(${test_name} PRIVATE kernel_module)
+        target_link_libraries(${test_name} PRIVATE my_kernel_module)
         target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
         add_test(NAME ${test_name} COMMAND ${test_name})
     endforeach()
 
     add_negative_link_test(test_no_raw_new ${CMAKE_SOURCE_DIR}/tests/test_negative_new.cpp)
-    add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
-                                               --target test_no_raw_new
+    add_test(
+        NAME test_no_raw_new_eval
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_no_raw_new
     )
 endif()
 
 add_negative_compile_test(test_nodiscard ${CMAKE_SOURCE_DIR}/tests/test_nodiscard.cpp)
-add_test(NAME test_nodiscard_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target
-                                          test_nodiscard
+add_test(
+    NAME test_nodiscard_eval
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target test_nodiscard
 )
 
-if(BUILD_KO)
-    add_kbuild_module(cpp_lkm kernel_module ALL)
-endif()
-
+# ---------------------------------------------------------------------------
+# Format / lint convenience targets.
+# ---------------------------------------------------------------------------
 include(cmake/cpp/FormatTargets.cmake)

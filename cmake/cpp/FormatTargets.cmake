@@ -9,6 +9,11 @@ if(CLANG_FORMAT_EXE)
         "${CMAKE_SOURCE_DIR}/src/*.cpp"
         "${CMAKE_SOURCE_DIR}/src/*.h"
         "${CMAKE_SOURCE_DIR}/src/*.hpp"
+        "${CMAKE_SOURCE_DIR}/include/*.hpp"
+        "${CMAKE_SOURCE_DIR}/include/*.h"
+        "${CMAKE_SOURCE_DIR}/cpp-lkm/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/cpp-lkm/include/*.hpp"
+        "${CMAKE_SOURCE_DIR}/cpp-lkm/include/*.h"
         "${CMAKE_SOURCE_DIR}/tests/*.cpp"
         "${CMAKE_SOURCE_DIR}/tests/*.hpp"
         "${CMAKE_SOURCE_DIR}/tests/*.h"
@@ -53,8 +58,14 @@ if(NOT CMAKE_LINT_EXE)
     find_program(CMAKE_LINT_EXE NAMES cmake-lint)
 endif()
 if(CMAKE_FORMAT_EXE)
-    file(GLOB_RECURSE CMAKE_SOURCES "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
-         "${CMAKE_SOURCE_DIR}/cmake/*.cmake" "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
+    file(
+        GLOB_RECURSE
+        CMAKE_SOURCES
+        "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
+        "${CMAKE_SOURCE_DIR}/cmake/*.cmake"
+        "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
+        "${CMAKE_SOURCE_DIR}/cpp-lkm/CMakeLists.txt"
+        "${CMAKE_SOURCE_DIR}/cpp-lkm/cmake/*.cmake"
     )
     add_custom_target(
         cmake-format
@@ -73,8 +84,14 @@ if(CMAKE_FORMAT_EXE)
 endif()
 if(CMAKE_LINT_EXE)
     if(NOT CMAKE_FORMAT_EXE)
-        file(GLOB_RECURSE CMAKE_SOURCES "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
-             "${CMAKE_SOURCE_DIR}/cmake/*.cmake" "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
+        file(
+            GLOB_RECURSE
+            CMAKE_SOURCES
+            "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
+            "${CMAKE_SOURCE_DIR}/cmake/*.cmake"
+            "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"
+            "${CMAKE_SOURCE_DIR}/cpp-lkm/CMakeLists.txt"
+            "${CMAKE_SOURCE_DIR}/cpp-lkm/cmake/*.cmake"
         )
     endif()
     add_custom_target(

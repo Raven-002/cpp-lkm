@@ -132,9 +132,9 @@ ko:
   just BUILD_KO=ON BUILD_DIR="{{KO_BUILD_DIR}}" BUILD_MODE="{{BUILD_MODE}}" KBUILD_DIR="{{KBUILD_DIR}}" build
 
 smoke: ko
-  ko_path="{{KO_BUILD_DIR}}/cpp_lkm.ko" && \
+  ko_path="{{KO_BUILD_DIR}}/my_kernel_module.ko" && \
   if [[ ! -f "$ko_path" ]]; then echo "Missing $ko_path. Build failed?"; exit 1; fi && \
-  name="cpp_lkm" && \
+  name="my_kernel_module" && \
   before_epoch=$(date +%s) && \
   echo "== insmod ==" && \
   sudo insmod "$ko_path" || { echo "insmod failed"; exit 1; } && \
@@ -149,5 +149,5 @@ smoke: ko
 
 # Attempts to remove the module if it is loaded (useful after failed smoke).
 smoke-clean:
-  name="cpp_lkm" && \
+  name="my_kernel_module" && \
   if lsmod | awk '{print $1}' | grep -qx "$name"; then sudo rmmod "$name"; else echo "$name not loaded"; fi

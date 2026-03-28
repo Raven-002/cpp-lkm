@@ -1,20 +1,20 @@
-#include "cpp_lkm/module/module.hpp"
+#include "my_module/my_kernel_module.hpp"
 
 #include "cpp_lkm/runtime/kalloc.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
 
-class CppKernelModule::Resource
+class MyKernelModule::Resource
 {
   public:
     int id = 0;
 };
 
-CppKernelModule::CppKernelModule()
+MyKernelModule::MyKernelModule()
 {
     cpp_printk(CPP_KERN_INFO "[CPP] Constructed\n");
 }
 
-Result<void> CppKernelModule::init()
+Result<void> MyKernelModule::init()
 {
     auto assign_resource = [](Resource*& target) -> Result<void>
     {
@@ -48,7 +48,7 @@ Result<void> CppKernelModule::init()
     return {};
 }
 
-CppKernelModule::~CppKernelModule()
+MyKernelModule::~MyKernelModule()
 {
     kfree_obj(_resource1);
     kfree_obj(_resource2);

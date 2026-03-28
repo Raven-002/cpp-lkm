@@ -1,4 +1,4 @@
-#include "cpp_lkm/module/userspace_device.hpp"
+#include "my_module/userspace_device.hpp"
 
 #include <cstring>
 #include <string_view>
@@ -10,7 +10,8 @@ static cpp_ssize_t userspace_read_impl(void* ctx, void* kbuf, size_t len, std::i
     return static_cast<UserspaceDevice*>(ctx)->read_kernel(kbuf, len, pos);
 }
 
-static cpp_ssize_t userspace_write_impl(void* ctx, const void* kbuf, size_t len, std::int64_t* pos)
+static cpp_ssize_t userspace_write_impl(void* ctx, const void* kbuf, size_t len,
+                                        std::int64_t* pos)
 {
     return static_cast<UserspaceDevice*>(ctx)->write_kernel(kbuf, len, pos);
 }
