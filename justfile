@@ -8,6 +8,7 @@
 #   just qa          # all format + lint checks
 #   just qa-fix-*    # auto-fix for each qa target
 #   just smoke
+#   just cmake-graph   # CMake target dependency graph (.dot + optional .svg)
 
 set dotenv-load := false
 set ignore-comments := true
@@ -48,6 +49,17 @@ configure:
 
 build: configure
   cmake --build "{{BUILD_DIR}}" -j
+
+# Regenerates Graphviz output for CMake targets (PUBLIC/INTERFACE/PRIVATE link edges).
+# Requires configure first; outputs under BUILD_DIR. Install graphviz for SVG.
+cmake-graph: configure
+  cmake --graphviz="{{BUILD_DIR}}/cmake-deps.dot" -S . -B "{{BUILD_DIR}}" && \
+  if command -v dot >/dev/null 2>&1; then \
+    dot -Tsvg "{{BUILD_DIR}}/cmake-deps.dot" -o "{{BUILD_DIR}}/cmake-deps.svg" && \
+    echo "Wrote {{BUILD_DIR}}/cmake-deps.dot and {{BUILD_DIR}}/cmake-deps.svg"; \
+  else \
+    echo "Wrote {{BUILD_DIR}}/cmake-deps.dot (install graphviz for SVG: dot -Tsvg …)"; \
+  fi
 
 test: build
   ctest --test-dir "{{BUILD_DIR}}" -V
