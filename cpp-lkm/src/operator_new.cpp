@@ -9,6 +9,10 @@
 
 // operator new(size_t) — declared by the standard headers, intentionally NOT defined.
 // The linker will error if any TU calls heap-form new.
+//
+// NOLINTBEGIN(cert-dcl54-cpp, hicpp-new-delete-operators, misc-new-delete-overloads):
+// clang-tidy does not treat <new> as user code for pairing checks; heap operator new
+// is intentionally omitted in this TU (see file comment).
 
 void operator delete(void* ptr) noexcept
 {
@@ -19,3 +23,5 @@ void operator delete(void* ptr, size_t /*size*/) noexcept
 {
     cpp_kfree(ptr);
 }
+
+// NOLINTEND(cert-dcl54-cpp, hicpp-new-delete-operators, misc-new-delete-overloads)

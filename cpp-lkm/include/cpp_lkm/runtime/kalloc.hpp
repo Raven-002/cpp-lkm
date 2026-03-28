@@ -40,6 +40,7 @@ template <typename T, typename... Args> [[nodiscard]] Result<T*> kalloc(Args&&..
     {
         return std::unexpected(mem.error());
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): Result<T*> API; caller frees via kfree_obj.
     return new (*mem) T{std::forward<Args>(args)...};
 }
 

@@ -2,7 +2,7 @@
 
 ## Repository Layout
 
-```
+```text
 cpp-lkm/                   # Reusable framework subproject
   CMakeLists.txt           # Exposes cpp_lkm_create_kernel_interface() and
                            # cpp_lkm_add_ko_target(); builds cpp_lkm_runtime.
@@ -67,18 +67,31 @@ tests/
 
 ## Public CMake API
 
-### `cpp_lkm_create_kernel_interface(<target> [MODULE_NAME <n>] [KDIR <path>] [ABI_MODE ko])`
+### `cpp_lkm_create_kernel_interface`
+
+```cmake
+cpp_lkm_create_kernel_interface(<target> [MODULE_NAME <n>] [KDIR <path>]
+  [ABI_MODE ko])
+```
 
 Creates an `INTERFACE` target that carries:
+
 - Freestanding C++23 flags (`-ffreestanding`, `-fno-exceptions`, `-fno-rtti`, …)
 - Framework include directories (`cpp-lkm/include/`, repo root for `compat/`)
 - `__KERNEL__`, `MODULE`, `KBUILD_MODNAME=<name>` compile definitions
 - Kernel header paths (from `KDIR` arg, `CPP_LKM_KDIR` cache var, or `uname -r`)
-- x86_64 ABI flags (`-mcmodel=kernel`, retpoline/thunk) **only** when `ABI_MODE ko`
+- x86_64 ABI flags (`-mcmodel=kernel`, retpoline/thunk) **only** when
+  `ABI_MODE ko`
 
-### `cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n> MODULE_OBJECT <C> MODULE_HEADER <h> [ALL])`
+### `cpp_lkm_add_ko_target`
+
+```cmake
+cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n> MODULE_OBJECT <C>
+  MODULE_HEADER <h> [ALL])
+```
 
 Produces `<n>_ko` custom target and `<n>.ko` in the build dir. Internally:
+
 1. Generates `module_bridge.cpp` from the template (instantiates `MODULE_OBJECT`).
 2. Builds `<n>.bridge` OBJECT target.
 3. Generates `linux_entry.c` (Kbuild entry point, `MODULE_LICENSE`, metadata).
@@ -119,6 +132,7 @@ destructor. This is the **only** place that names the concrete type.
 `cpp_lkm_add_ko_target()` (and `cpp_lkm_gen_host_bridge()` for host tests)
 calls `configure_file()` on `cpp-lkm/cmake/templates/module_bridge.cpp.in`,
 substituting:
+
 - `@CPP_LKM_MODULE_OBJECT@` → the class name passed as `MODULE_OBJECT`
 - `@CPP_LKM_MODULE_HEADER@` → the header path passed as `MODULE_HEADER`
 
