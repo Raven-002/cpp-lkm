@@ -1,21 +1,21 @@
 #pragma once
 
 #include "cpp_lkm/runtime/kernel_module.hpp"
-#include "kernel_module/userspace_device.hpp"
+#include "userspace_device.hpp"
 
 // Example kernel module implementation.
 // Implements IKernelModule (two-phase init: trivial ctor + fallible init()).
-class MyKernelModule : public IKernelModule
+class KernelModule : public IKernelModule
 {
   public:
-    MyKernelModule();
-    MyKernelModule(const MyKernelModule&) = delete;
-    MyKernelModule& operator=(const MyKernelModule&) = delete;
-    MyKernelModule(MyKernelModule&&) = delete;
-    MyKernelModule& operator=(MyKernelModule&&) = delete;
+    KernelModule();
+    KernelModule(const KernelModule&) = delete;
+    KernelModule& operator=(const KernelModule&) = delete;
+    KernelModule(KernelModule&&) = delete;
+    KernelModule& operator=(KernelModule&&) = delete;
 
     [[nodiscard]] Result<void> init() override;
-    ~MyKernelModule() override;
+    ~KernelModule() override;
 
   private:
     class Resource;

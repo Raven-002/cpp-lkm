@@ -1,4 +1,4 @@
-#include "kernel_module/my_kernel_module.hpp"
+#include "kernel_module/kernel_module.hpp"
 
 #include "cpp_lkm/runtime/kalloc.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cpp_lkm/runtime/kernel_api.h"
-#include "kernel_module/errors.hpp"
+#include "errors.hpp" // IWYU pragma: keep
 
 #include <array>
 #include <cstddef>
