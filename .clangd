@@ -2,6 +2,9 @@
 # (kernel headers required); host compile_commands.json does not include them,
 # so clangd falls back to default flags and floods the editor.
 ---
+CompileFlags:
+  CompilationDatabase: builds/host
+---
 If:
   PathMatch: .*(linux_bridge|linux_entry)\.c
 Diagnostics:
