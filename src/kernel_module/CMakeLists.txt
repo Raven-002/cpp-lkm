@@ -1,8 +1,6 @@
 add_library(
     kernel_module STATIC
-    src/kernel_module.cpp
-    src/userspace_device.cpp
-    include/kernel_module/kernel_module.hpp
+    src/kernel_module.cpp src/userspace_device.cpp include/kernel_module/kernel_module.hpp
     include/kernel_module/userspace_device.hpp
 )
 

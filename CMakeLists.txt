@@ -73,9 +73,9 @@ if(BUILD_KO)
         MODULE_NAME
         my_kernel_module
         MODULE_OBJECT
-        MyKernelModule
+        KernelModule
         MODULE_HEADER
-        kernel_module/my_kernel_module.hpp
+        kernel_module/kernel_module.hpp
         KERNEL_INTERFACE
         my_kernel_module.iface
         MODULE_INCLUDE_DIRS
@@ -91,7 +91,7 @@ else()
         MODULE_OBJECT
         MyKernelModule
         MODULE_HEADER
-        kernel_module/my_kernel_module.hpp
+        kernel_module/kernel_module.hpp
         KERNEL_INTERFACE
         my_kernel_module.iface
         MODULE_INCLUDE_DIRS

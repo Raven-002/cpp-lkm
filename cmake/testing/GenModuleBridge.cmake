@@ -40,7 +40,7 @@ function(cpp_lkm_gen_host_bridge)
     # Runtime for operator delete etc.
     target_link_libraries(${_bridge_obj_target} PUBLIC cpp_lkm_runtime)
 
-    # Fold the bridge objects into the consumer STATIC library so that anything linking
-    # it gets cpp_module_init/exit.
+    # Fold the bridge objects into the consumer STATIC library so that anything linking it gets
+    # cpp_module_init/exit.
     target_sources(${_HB_TARGET} PRIVATE $<TARGET_OBJECTS:${_bridge_obj_target}>)
 endfunction()
