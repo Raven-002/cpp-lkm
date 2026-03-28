@@ -1,0 +1,12 @@
+[project]
+name = "cpp-lkm-dev-tools"
+version = "0.1.0"
+description = "Development tooling environment for cpp-lkm"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "cmakelang[yaml]>=0.6.13",
+  "pre-commit>=3.8.0",
+]

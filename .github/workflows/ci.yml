@@ -15,6 +15,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Sync dev toolchains
+        run: |
+          uv sync --group dev --frozen
+          bun install --frozen-lockfile
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -39,15 +50,13 @@ jobs:
           if [ -n "$files" ]; then clang-tidy -p build $files; fi
 
       - name: CMake format check
-        run: |
-          pip install 'cmakelang[YAML]'
-          bash scripts/cmake-format-check.sh
+        run: bash scripts/cmake-format-check.sh
 
       - name: CMake lint
         run: bash scripts/cmake-lint.sh
 
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.22.0 "docs/**/*.md" "README.md"
+        run: bun run lint:md
 
   platform-gcc12_5:
     runs-on: ubuntu-latest

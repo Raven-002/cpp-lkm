@@ -2,6 +2,7 @@
 #
 # Quick usage:
 #   just --list
+#   just setup-dev-env   # uv + bun dev toolchains (once per clone / after lock changes)
 #   just build
 #   just test
 #   just qa          # all format + lint checks
@@ -28,6 +29,15 @@ default:
 
 clean:
   rm -rf "{{BUILD_DIR}}" "{{KO_BUILD_DIR}}"
+
+setup-dev-env:
+  if ! command -v uv >/dev/null 2>&1; then echo "uv not found. Install from https://docs.astral.sh/uv/" >&2; exit 2; fi && \
+  uv sync --group dev && \
+  if [[ -n "${BUN_BIN:-}" && -x "${BUN_BIN}" ]]; then bun="${BUN_BIN}"; \
+  elif [[ -x "${HOME}/.bun/bin/bun" ]]; then bun="${HOME}/.bun/bin/bun"; \
+  elif command -v bun >/dev/null 2>&1; then bun="$(command -v bun)"; \
+  else echo "bun not found. Install from https://bun.sh or set BUN_BIN (e.g. ~/.bun/bin/bun)" >&2; exit 2; fi && \
+  "$bun" install
 
 configure:
   if [[ -n "{{KBUILD_DIR}}" ]]; then \
@@ -63,7 +73,7 @@ qa-lint-cpp:
   clang-tidy -p "{{BUILD_DIR}}" $files
 
 qa-lint-markdown:
-  (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 "docs/**/*.md" "README.md"
+  bash scripts/markdownlint.sh
 
 # CMake lint is optional (script skips if cmake-lint is unavailable).
 qa-lint-cmake:
@@ -91,7 +101,7 @@ qa-fix-lint: qa-fix-lint-cpp
 qa-fix-lint-cpp: qa-fix-format-cpp
 
 qa-fix-lint-markdown:
-  (command -v markdownlint-cli2 >/dev/null 2>&1 && markdownlint-cli2 --fix "docs/**/*.md" "README.md") || npx --yes markdownlint-cli2 --fix "docs/**/*.md" "README.md"
+  bash scripts/markdownlint.sh --fix
 
 # CMake lint fix = cmake-format -i.
 qa-fix-lint-cmake:

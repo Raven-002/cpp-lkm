@@ -1,0 +1,13 @@
+{
+  "name": "cpp-lkm-dev-tools",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Node-based development tooling for cpp-lkm",
+  "scripts": {
+    "lint:md": "markdownlint-cli2 \"docs/**/*.md\" \"README.md\" \".agents/**/*.md\"",
+    "fix:md": "markdownlint-cli2 --fix \"docs/**/*.md\" \"README.md\" \".agents/**/*.md\""
+  },
+  "devDependencies": {
+    "markdownlint-cli2": "^0.22.0"
+  }
+}

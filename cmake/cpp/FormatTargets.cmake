@@ -34,8 +34,24 @@ else()
 endif()
 
 # CMake format and lint (cmakelang: cmake-format, cmake-lint)
-find_program(CMAKE_FORMAT_EXE NAMES cmake-format)
-find_program(CMAKE_LINT_EXE NAMES cmake-lint)
+find_program(
+    CMAKE_FORMAT_EXE
+    NAMES cmake-format
+    PATHS "${CMAKE_SOURCE_DIR}/.venv/bin"
+    NO_DEFAULT_PATH
+)
+if(NOT CMAKE_FORMAT_EXE)
+    find_program(CMAKE_FORMAT_EXE NAMES cmake-format)
+endif()
+find_program(
+    CMAKE_LINT_EXE
+    NAMES cmake-lint
+    PATHS "${CMAKE_SOURCE_DIR}/.venv/bin"
+    NO_DEFAULT_PATH
+)
+if(NOT CMAKE_LINT_EXE)
+    find_program(CMAKE_LINT_EXE NAMES cmake-lint)
+endif()
 if(CMAKE_FORMAT_EXE)
     file(GLOB_RECURSE CMAKE_SOURCES "${CMAKE_SOURCE_DIR}/CMakeLists.txt"
          "${CMAKE_SOURCE_DIR}/cmake/*.cmake" "${CMAKE_SOURCE_DIR}/cmake/*/*.cmake"

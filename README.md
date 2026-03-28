@@ -90,3 +90,25 @@ cmake -B build -DBUILD_MODE=host
 cmake --build build --target format
 cmake --build build --target format-check
 ```
+
+## Development tooling (`uv` + `bun`)
+
+Python-based dev tools (`cmake-format`, `cmake-lint`, `pre-commit`) are managed
+with [uv](https://docs.astral.sh/uv/). Markdown linting uses a bun project
+([bun](https://bun.sh/); typical install path: `~/.bun/bin/bun`).
+
+```bash
+uv sync --group dev
+bun install
+```
+
+Then use [just](https://github.com/casey/just) for the usual checks, for example
+`just qa` and `just qa-fix`. CMake targets `cmake-format`, `cmake-format-check`,
+and `cmake-lint` pick up `cmake-format` / `cmake-lint` from `.venv/bin` after
+`uv sync` (no global pip install required).
+
+Install Git hooks (optional):
+
+```bash
+uv run pre-commit install
+```

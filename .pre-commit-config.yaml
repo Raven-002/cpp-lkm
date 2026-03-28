@@ -2,8 +2,8 @@
 # Run: pre-commit run --all-files
 # Install: pre-commit install
 #
-# Requires: just, clang-format, clang-tidy, cmake-format, cmake-lint, markdownlint-cli2
-# (cmakelang: pip install 'cmakelang[YAML]'; markdownlint: npm i -g markdownlint-cli2)
+# Requires: just, uv (Python dev tools), bun, clang-format, clang-tidy
+# Bootstrap: uv sync --group dev && bun install
 
 repos:
   # C++ format check (no modify)
@@ -42,10 +42,12 @@ repos:
         language: system
         pass_filenames: false
 
-  # Markdown lint (docs + root .md)
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.21.0
+  # Markdown lint (bun-managed markdownlint-cli2; pass filenames for staged files)
+  - repo: local
     hooks:
       - id: markdownlint-cli2
         name: Markdown lint
+        entry: bash scripts/markdownlint.sh
+        language: system
+        pass_filenames: true
         files: ^(docs/|README\.md|\.agents/.*\.md)$
