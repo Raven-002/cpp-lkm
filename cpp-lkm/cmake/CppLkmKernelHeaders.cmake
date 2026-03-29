@@ -4,14 +4,18 @@
 # Usage:
 #   cpp_lkm_attach_kernel_headers(<target> KDIR <kdir> MODULE_NAME <name>)
 
-function(cpp_lkm_attach_kernel_headers target)
+function(cpp_lkm_attach_kernel_headers iface_target)
+    cpp_lkm_assert_nonempty("cpp_lkm_attach_kernel_headers()" "<iface_target>" "${iface_target}")
+
     set(oneValueArgs KDIR MODULE_NAME)
     cmake_parse_arguments(_AKH "" "${oneValueArgs}" "" ${ARGN})
+
+    cpp_lkm_assert_nonempty_vars("cpp_lkm_attach_kernel_headers()" "_AKH" KDIR MODULE_NAME)
 
     set(_kdir "${_AKH_KDIR}")
     set(_mod "${_AKH_MODULE_NAME}")
 
-    target_compile_definitions(${target} INTERFACE KBUILD_MODNAME=\"${_mod}\")
+    target_compile_definitions(${iface_target} INTERFACE KBUILD_MODNAME=\"${_mod}\")
 
     if(NOT EXISTS "${_kdir}/Makefile")
         message(
@@ -35,7 +39,7 @@ function(cpp_lkm_attach_kernel_headers target)
     endif()
 
     target_include_directories(
-        ${target}
+        ${iface_target}
         INTERFACE "${_kdir}/include"
                   "${_kdir}/include/uapi"
                   "${_kdir}/include/generated"

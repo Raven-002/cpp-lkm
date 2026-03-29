@@ -6,7 +6,9 @@
 #
 # Only adds flags when the host processor is x86_64/AMD64.
 
-function(cpp_lkm_attach_kernel_abi target)
+function(cpp_lkm_attach_kernel_abi iface_target)
+    cpp_lkm_assert_nonempty("cpp_lkm_attach_kernel_abi()" "<iface_target>" "${iface_target}")
+
     if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
         return()
     endif()
@@ -25,5 +27,5 @@ function(cpp_lkm_attach_kernel_abi target)
         list(APPEND _abi_flags -mretpoline-external-thunk -mfunction-return=thunk-extern)
     endif()
 
-    target_compile_options(${target} INTERFACE ${_abi_flags})
+    target_compile_options(${iface_target} INTERFACE ${_abi_flags})
 endfunction()

@@ -14,4 +14,4 @@ target_sources(
            include/kernel_module/kernel_echo_server.hpp
 )
 
-target_link_libraries(kernel_module PUBLIC my_kernel_module.iface cpp_lkm_runtime)
+target_link_libraries(kernel_module PUBLIC "my_kernel_module.iface" cpp_lkm_runtime)

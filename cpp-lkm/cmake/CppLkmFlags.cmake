@@ -2,7 +2,9 @@
 # Computes CPP_LKM_CXX_FLAGS — the freestanding C++23 kernel-compatible compiler flags.
 # Call cpp_lkm_get_cxx_flags(<out-var>) to obtain the list.
 
-function(cpp_lkm_get_cxx_flags out_var)
+function(cpp_lkm_get_cxx_flags cxx_flags_out)
+    cpp_lkm_assert_nonempty("cpp_lkm_get_cxx_flags()" "<cxx_flags_out>" "${cxx_flags_out}")
+
     set(_flags
         -std=c++23
         -ffreestanding
@@ -24,7 +26,7 @@ function(cpp_lkm_get_cxx_flags out_var)
     )
         list(APPEND _flags -Wno-interference-size)
     endif()
-    set(${out_var}
+    set(${cxx_flags_out}
         "${_flags}"
         PARENT_SCOPE
     )

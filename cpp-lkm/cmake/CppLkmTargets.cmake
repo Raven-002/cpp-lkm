@@ -8,6 +8,7 @@
 #                         [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
 #                         [KERNEL_INTERFACE <iface>] [KDIR <path>] [ALL])
 
+include("${CPP_LKM_DIR}/../cmake/Utils.cmake")
 include(${CPP_LKM_DIR}/cmake/CppLkmFlags.cmake)
 include(${CPP_LKM_DIR}/cmake/CppLkmKernelDir.cmake)
 include(${CPP_LKM_DIR}/cmake/CppLkmKernelHeaders.cmake)
@@ -28,38 +29,40 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 #   - kernel header directories (if the kernel tree exists)
 #   - kernel ABI compile options (when ABI_MODE is "ko")
 # ---------------------------------------------------------------------------
-function(cpp_lkm_create_kernel_interface target)
+function(cpp_lkm_create_kernel_interface iface_target)
+    cpp_lkm_assert_nonempty("cpp_lkm_create_kernel_interface()" "<iface_target>" "${iface_target}")
+
     set(oneValueArgs MODULE_NAME KDIR ABI_MODE)
     cmake_parse_arguments(_CLKI "" "${oneValueArgs}" "" ${ARGN})
 
     if(NOT _CLKI_MODULE_NAME)
-        set(_CLKI_MODULE_NAME "${target}")
+        set(_CLKI_MODULE_NAME "${iface_target}")
     endif()
 
-    add_library(${target} INTERFACE)
+    add_library(${iface_target} INTERFACE)
 
     # C++ compiler flags
     cpp_lkm_get_cxx_flags(_cxx_flags)
-    target_compile_options(${target} INTERFACE ${_cxx_flags})
+    target_compile_options(${iface_target} INTERFACE ${_cxx_flags})
 
     # Framework headers + compat shims (cpp_lkm_compat exposes compat/ includes)
-    target_link_libraries(${target} INTERFACE cpp_lkm_compat)
-    target_include_directories(${target} INTERFACE "${CPP_LKM_DIR}/include")
+    target_link_libraries(${iface_target} INTERFACE cpp_lkm_compat)
+    target_include_directories(${iface_target} INTERFACE "${CPP_LKM_DIR}/include")
 
     # Kernel definitions common to all kernel module targets
-    target_compile_definitions(${target} INTERFACE __KERNEL__ MODULE)
+    target_compile_definitions(${iface_target} INTERFACE __KERNEL__ MODULE)
 
     # Kernel header paths + KBUILD_MODNAME
     cpp_lkm_resolve_kdir(_kdir "${_CLKI_KDIR}")
     cpp_lkm_attach_kernel_headers(
-        ${target}
+        ${iface_target}
         KDIR "${_kdir}"
         MODULE_NAME "${_CLKI_MODULE_NAME}"
     )
 
     # ABI flags only for real .ko builds
     if(_CLKI_ABI_MODE STREQUAL "ko")
-        cpp_lkm_attach_kernel_abi(${target})
+        cpp_lkm_attach_kernel_abi(${iface_target})
     endif()
 endfunction()
 
@@ -90,6 +93,15 @@ function(cpp_lkm_add_ko_target)
     )
     set(multiValueArgs MODULE_INCLUDE_DIRS)
     cmake_parse_arguments(_CLAT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    cpp_lkm_assert_nonempty_vars(
+        "cpp_lkm_add_ko_target()"
+        "_CLAT"
+        TARGET
+        MODULE_NAME
+        MODULE_OBJECT
+        MODULE_HEADER
+    )
 
     if(NOT _CLAT_KERNEL_API_SRC_DIR)
         message(

@@ -23,6 +23,17 @@ function(cpp_lkm_add_kbuild_stage)
     )
     cmake_parse_arguments(_KB "${options}" "${oneValueArgs}" "" ${ARGN})
 
+    cpp_lkm_assert_nonempty_vars(
+        "cpp_lkm_add_kbuild_stage()"
+        "_KB"
+        MODULE_NAME
+        MODULE_LIB
+        KERNEL_API_SRC_DIR
+        BRIDGE_TARGET
+        RUNTIME_LIB
+        KDIR
+    )
+
     set(_kdir "${_KB_KDIR}")
     if(NOT EXISTS "${_kdir}/Makefile")
         message(
@@ -39,14 +50,6 @@ function(cpp_lkm_add_kbuild_stage)
     set(_mod "${_KB_MODULE_NAME}")
     set(_stage_dir "${CMAKE_CURRENT_BINARY_DIR}/kbuild_${_mod}")
     file(MAKE_DIRECTORY "${_stage_dir}")
-
-    if(NOT _KB_KERNEL_API_SRC_DIR)
-        message(
-            FATAL_ERROR
-                "cpp_lkm_add_kbuild_stage(): KERNEL_API_SRC_DIR is required (directory of *.c sources "
-                "compiled only by Kbuild, e.g. cpp_* bridge)."
-        )
-    endif()
 
     file(GLOB _ka_c CONFIGURE_DEPENDS "${_KB_KERNEL_API_SRC_DIR}/*.c")
     list(SORT _ka_c)

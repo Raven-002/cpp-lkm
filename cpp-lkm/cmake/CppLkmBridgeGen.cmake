@@ -18,6 +18,16 @@ function(cpp_lkm_generate_module_bridge)
     set(multiValueArgs MODULE_INCLUDE_DIRS)
     cmake_parse_arguments(_GEN "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+    cpp_lkm_assert_nonempty_vars(
+        "cpp_lkm_generate_module_bridge()"
+        "_GEN"
+        MODULE_NAME
+        MODULE_OBJECT
+        MODULE_HEADER
+        KERNEL_INTERFACE
+        OUT_OBJECT_TARGET
+    )
+
     set(_gen_dir "${CMAKE_CURRENT_BINARY_DIR}/cpp_lkm_bridge_${_GEN_MODULE_NAME}")
     file(MAKE_DIRECTORY "${_gen_dir}")
 
