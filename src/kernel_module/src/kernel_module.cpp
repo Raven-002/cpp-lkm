@@ -1,7 +1,8 @@
 #include "kernel_module/kernel_module.hpp"
 
-#include "cpp_lkm/runtime/kalloc.hpp"
 #include "cpp_lkm/runtime/kernel_api.h"
+
+#include <utility>
 
 class KernelModule::Resource
 {
@@ -16,25 +17,20 @@ KernelModule::KernelModule() : _userspace(_echo_server)
 
 Result<void> KernelModule::init()
 {
-    auto assign_resource = [](Resource*& target) -> Result<void>
+    auto resource1 = kalloc_owned<Resource>();
+    if (!resource1)
     {
-        auto allocated = kalloc<Resource>();
-        if (!allocated)
-        {
-            return std::unexpected(allocated.error());
-        }
-        target = *allocated;
-        return {};
-    };
+        return std::unexpected(resource1.error());
+    }
 
-    if (auto first = assign_resource(_resource1); !first)
+    auto resource2 = kalloc_owned<Resource>();
+    if (!resource2)
     {
-        return std::unexpected(first.error());
+        return std::unexpected(resource2.error());
     }
-    if (auto second = assign_resource(_resource2); !second)
-    {
-        return std::unexpected(second.error());
-    }
+
+    _resource1 = std::move(*resource1);
+    _resource2 = std::move(*resource2);
 
     _resource1->id = 1;
     _resource2->id = 2;
@@ -50,7 +46,5 @@ Result<void> KernelModule::init()
 
 KernelModule::~KernelModule()
 {
-    kfree_obj(_resource1);
-    kfree_obj(_resource2);
     cpp_printk(CPP_KERN_INFO "[CPP] Destructed\n");
 }

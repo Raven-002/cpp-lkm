@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
+#include <utility>
 
 class TestObj
 {
@@ -124,6 +125,79 @@ static void test_kfree_obj_calls_destructor()
     assert(TestObj::destructor_count == 1);
 }
 
+// ---- KOwned / kalloc_owned ----
+
+static void test_kalloc_owned_success()
+{
+    reset_mock_state();
+    TestObj::destructor_count = 0;
+    {
+        auto owned_result = kalloc_owned<TestObj>(42);
+        assert(owned_result.has_value());
+        KOwned<TestObj> owned = std::move(*owned_result);
+        assert(owned);
+        assert(owned->value() == 42);
+    }
+    assert(TestObj::destructor_count == 1);
+}
+
+static void test_kalloc_owned_fail()
+{
+    reset_mock_state();
+    g_mock_kmalloc_fail = 1;
+    auto owned = kalloc_owned<TestObj>(99);
+    assert(!owned.has_value());
+    assert(owned.error() == -ENOMEM);
+}
+
+static void test_kowned_move_semantics()
+{
+    reset_mock_state();
+    TestObj::destructor_count = 0;
+    {
+        auto owned_result = kalloc_owned<TestObj>(7);
+        assert(owned_result.has_value());
+        KOwned<TestObj> first = std::move(*owned_result);
+        assert(first);
+        KOwned<TestObj> second = std::move(first);
+        assert(second);
+        assert(second->value() == 7);
+        KOwned<TestObj> third;
+        third = std::move(second);
+        assert(third);
+        assert(third->value() == 7);
+    }
+    assert(TestObj::destructor_count == 1);
+}
+
+static void test_kowned_reset()
+{
+    reset_mock_state();
+    TestObj::destructor_count = 0;
+    auto owned_result = kalloc_owned<TestObj>(11);
+    assert(owned_result.has_value());
+    KOwned<TestObj> owned = std::move(*owned_result);
+    owned.reset();
+    assert(TestObj::destructor_count == 1);
+    owned.reset();
+    assert(TestObj::destructor_count == 1);
+}
+
+static void test_kowned_release()
+{
+    reset_mock_state();
+    TestObj::destructor_count = 0;
+    auto owned_result = kalloc_owned<TestObj>(13);
+    assert(owned_result.has_value());
+    KOwned<TestObj> owned = std::move(*owned_result);
+    TestObj* raw = owned.release();
+    assert(raw != nullptr);
+    assert(!owned);
+    assert(TestObj::destructor_count == 0);
+    kfree_obj(raw);
+    assert(TestObj::destructor_count == 1);
+}
+
 // ---- Array allocation ----
 
 static void test_kalloc_array_success()
@@ -164,6 +238,11 @@ extern "C" int main()
     test_kalloc_array_overflow_guard();
     test_kfree_obj_null();
     test_kfree_obj_calls_destructor();
+    test_kalloc_owned_success();
+    test_kalloc_owned_fail();
+    test_kowned_move_semantics();
+    test_kowned_reset();
+    test_kowned_release();
     test_kalloc_array_success();
     printf("All allocator tests passed!\n");
     return 0;

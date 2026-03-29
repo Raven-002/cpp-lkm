@@ -78,3 +78,78 @@ template <typename T> void kfree_obj(T* ptr) noexcept
         cpp_kfree(ptr);
     }
 }
+
+// Move-only owner for objects created by kalloc<T>().
+// Prefer this for normal single-object ownership in module code.
+// Keep raw kalloc()/kfree_obj() for low-level/manual control paths.
+// Do not use this with kalloc_array<T>() allocations; arrays are freed via cpp_kfree().
+template <typename T> class KOwned
+{
+  public:
+    KOwned() noexcept = default;
+    explicit KOwned(T* ptr) noexcept : _ptr(ptr) {}
+
+    ~KOwned()
+    {
+        reset();
+    }
+
+    KOwned(const KOwned&) = delete;
+    KOwned& operator=(const KOwned&) = delete;
+
+    KOwned(KOwned&& other) noexcept : _ptr(other.release()) {}
+
+    KOwned& operator=(KOwned&& other) noexcept
+    {
+        if (this != &other)
+        {
+            reset(other.release());
+        }
+        return *this;
+    }
+
+    [[nodiscard]] T* get() const noexcept
+    {
+        return _ptr;
+    }
+
+    [[nodiscard]] T& operator*() const noexcept
+    {
+        return *_ptr;
+    }
+
+    [[nodiscard]] T* operator->() const noexcept
+    {
+        return _ptr;
+    }
+
+    [[nodiscard]] explicit operator bool() const noexcept
+    {
+        return _ptr != nullptr;
+    }
+
+    T* release() noexcept
+    {
+        return std::exchange(_ptr, nullptr);
+    }
+
+    void reset(T* replacement = nullptr) noexcept
+    {
+        T* old = std::exchange(_ptr, replacement);
+        kfree_obj(old);
+    }
+
+  private:
+    T* _ptr = nullptr;
+};
+
+template <typename T, typename... Args>
+[[nodiscard]] Result<KOwned<T>> kalloc_owned(Args&&... args) noexcept
+{
+    auto raw = kalloc<T>(std::forward<Args>(args)...);
+    if (!raw)
+    {
+        return std::unexpected(raw.error());
+    }
+    return KOwned<T>{*raw};
+}
