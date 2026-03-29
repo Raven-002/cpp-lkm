@@ -10,6 +10,7 @@
 #     BRIDGE_TARGET <bridge-object-target>
 #     RUNTIME_LIB   <runtime-static-target>
 #     KDIR          <kernel-build-dir>
+#     [OBJTOOL_MODE <disable|keep>]
 #     [ALL]
 #   )
 #
@@ -17,7 +18,7 @@
 
 function(cpp_lkm_add_kbuild_stage)
     set(options ALL)
-    set(oneValueArgs MODULE_NAME MODULE_LIB BRIDGE_TARGET RUNTIME_LIB KDIR)
+    set(oneValueArgs MODULE_NAME MODULE_LIB BRIDGE_TARGET RUNTIME_LIB KDIR OBJTOOL_MODE)
     cmake_parse_arguments(_KB "${options}" "${oneValueArgs}" "" ${ARGN})
 
     set(_kdir "${_KB_KDIR}")
@@ -55,9 +56,32 @@ function(cpp_lkm_add_kbuild_stage)
     set(_module_archive "lib${_mod}.a")
     set(_runtime_archive "lib${_mod}_runtime.a")
 
+    set(_objtool_mode "${_KB_OBJTOOL_MODE}")
+    if(NOT _objtool_mode)
+        set(_objtool_mode "disable")
+    endif()
+    string(TOLOWER "${_objtool_mode}" _objtool_mode)
+    if(_objtool_mode STREQUAL "disable")
+        string(
+            CONCAT
+            _objtool_makefile_prefix
+            "OBJECT_FILES_NON_STANDARD := y\n"
+            "OBJECT_FILES_NON_STANDARD_${_mod}.o := y\n"
+            "${_mod}.o: objtool-enabled :=\n"
+        )
+    elseif(_objtool_mode STREQUAL "keep")
+        set(_objtool_makefile_prefix "")
+    else()
+        message(
+            FATAL_ERROR
+                "Invalid OBJTOOL_MODE '${_objtool_mode}'. Expected one of: disable, keep."
+        )
+    endif()
+
     string(
         CONCAT
         _makefile_content
+        "${_objtool_makefile_prefix}"
         "obj-m += ${_mod}.o\n"
         "${_mod}-y := ${_mod}_linux_entry.o ${_mod}_linux_bridge.o ${_bridge_archive} ${_module_archive} ${_runtime_archive}\n"
     )
