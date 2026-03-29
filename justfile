@@ -159,6 +159,8 @@ smoke: ko
   set -euo pipefail
   ko_path="{{KO_PATH}}"
   name="{{MODULE_NAME}}"
+  dev_path="/dev/cpp_lkm"
+  smoke_msg="smoke-echo"
   if [[ ! -f "$ko_path" ]]; then
     echo "Missing $ko_path. Build failed?"
     exit 1
@@ -166,6 +168,25 @@ smoke: ko
   before_epoch=$(date +%s)
   echo "== insmod =="
   sudo insmod "$ko_path"
+  if [[ ! -e "$dev_path" ]]; then
+    echo "Missing $dev_path after insmod."
+    exit 1
+  fi
+  echo "== device read (initial status) =="
+  initial_status="$(sudo head -c 11 "$dev_path")"
+  echo "status: ${initial_status}"
+  if [[ "$initial_status" != "cpp_lkm ok" ]]; then
+    echo "Unexpected initial status from $dev_path: '${initial_status}'"
+    exit 1
+  fi
+  echo "== device write/read echo =="
+  printf '%s' "$smoke_msg" | sudo tee "$dev_path" >/dev/null
+  echoed="$(sudo head -c "${#smoke_msg}" "$dev_path")"
+  echo "echo: ${echoed}"
+  if [[ "$echoed" != "$smoke_msg" ]]; then
+    echo "Echo mismatch from $dev_path. expected='${smoke_msg}' got='${echoed}'"
+    exit 1
+  fi
   since_sec=$(( $(date +%s) - before_epoch + 1 ))
   echo "== dmesg (since ${since_sec}s ago, filtered) =="
   sudo dmesg --color=always -T --since "${since_sec} seconds ago" | sed -n '/\[CPP\]/p'

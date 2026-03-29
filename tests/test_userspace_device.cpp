@@ -67,12 +67,35 @@ static void test_mock_write_then_read_echo()
     cpp_module_exit();
 }
 
+static void test_mock_write_truncates_to_device_capacity()
+{
+    reset_mock_state();
+    assert(cpp_module_init() == 0);
+
+    std::array<char, 300> msg{};
+    msg.fill('x');
+    std::int64_t pos = 0;
+    const cpp_ssize_t nwritten = cpp_mock_chardev_simulate_write(msg.data(), msg.size(), &pos);
+    assert(nwritten == 255);
+
+    std::array<char, 300> buf{};
+    pos = 0;
+    const cpp_ssize_t nread = cpp_mock_chardev_simulate_read(buf.data(), buf.size(), &pos);
+    assert(nread == 255);
+    std::array<char, 255> expected{};
+    expected.fill('x');
+    assert(memcmp(buf.data(), expected.data(), expected.size()) == 0);
+
+    cpp_module_exit();
+}
+
 extern "C" int main()
 {
     test_chardev_registered_on_successful_init();
     test_chardev_reg_fail_unwinds_module();
     test_mock_read_default_status();
     test_mock_write_then_read_echo();
+    test_mock_write_truncates_to_device_capacity();
     printf("All userspace device tests passed!\n");
     return 0;
 }

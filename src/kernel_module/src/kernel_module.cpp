@@ -9,7 +9,7 @@ class KernelModule::Resource
     int id = 0;
 };
 
-KernelModule::KernelModule()
+KernelModule::KernelModule() : _userspace(_echo_server)
 {
     cpp_printk(CPP_KERN_INFO "[CPP] Constructed\n");
 }
