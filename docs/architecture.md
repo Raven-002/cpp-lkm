@@ -120,7 +120,7 @@ Creates an `INTERFACE` target that carries:
 cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n> MODULE_OBJECT <C>
   MODULE_HEADER <h> KERNEL_API_SRC_DIR <dir>
   [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
-  [OBJTOOL_MODE <disable|keep>] [ALL])
+  [ALL])
 ```
 
 Produces `<n>_ko` custom target and `<n>.ko` in the build dir. Internally:
@@ -135,25 +135,6 @@ Produces `<n>_ko` custom target and `<n>.ko` in the build dir. Internally:
    the shim.
 6. Invokes `make -C <kdir> M=<stage-dir> modules` (kernel API `.c` files are
    compiled only by Kbuild).
-
-### Objtool Policy for C++ Modules
-
-Out-of-tree C++ modules may trigger noisy `objtool` `!ENDBR` warnings because
-virtual dispatch and callback trampolines do not always match objtool's strict
-kernel-C control-flow assumptions.
-
-The framework exposes a global cache option:
-
-- `CPP_LKM_OBJTOOL_MODE=disable` (default): generated Kbuild `Makefile` emits
-  `OBJECT_FILES_NON_STANDARD` directives to mark staged module objects as
-  non-standard and reduce objtool validation noise.
-- `CPP_LKM_OBJTOOL_MODE=keep`: keep default Kbuild objtool behavior.
-
-You can override the global policy per module by passing
-`OBJTOOL_MODE disable|keep` to `cpp_lkm_add_ko_target()`.
-
-Note: on kernels with delayed IBT/link-time objtool checks enabled, some
-`!ENDBR` warnings may still appear for C++ vtable/callback relocations.
 
 ## Two-Phase Initialization
 

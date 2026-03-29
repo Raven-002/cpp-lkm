@@ -6,8 +6,7 @@
 #   cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <name> MODULE_OBJECT <Class>
 #                         MODULE_HEADER <header> KERNEL_API_SRC_DIR <dir-with-*.c>
 #                         [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
-#                         [KERNEL_INTERFACE <iface>] [KDIR <path>]
-#                         [OBJTOOL_MODE <disable|keep>] [ALL])
+#                         [KERNEL_INTERFACE <iface>] [KDIR <path>] [ALL])
 
 include(${CPP_LKM_DIR}/cmake/CppLkmFlags.cmake)
 include(${CPP_LKM_DIR}/cmake/CppLkmKernelDir.cmake)
@@ -74,7 +73,6 @@ endfunction()
 #   [KERNEL_INTERFACE <iface-target>]     # the target from create_kernel_interface;
 #                                         # defaults to <MODULE_NAME>.iface
 #   [KDIR <path>]                         # override kernel build directory
-#   [OBJTOOL_MODE <disable|keep>]         # override CPP_LKM_OBJTOOL_MODE for this module
 #   [ALL]                                 # add to default build target
 # )
 #
@@ -88,7 +86,7 @@ endfunction()
 function(cpp_lkm_add_ko_target)
     set(options ALL)
     set(oneValueArgs TARGET MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_API_SRC_DIR KERNEL_API_INCLUDE_DIR
-                     KERNEL_INTERFACE KDIR OBJTOOL_MODE
+                     KERNEL_INTERFACE KDIR
     )
     set(multiValueArgs MODULE_INCLUDE_DIRS)
     cmake_parse_arguments(_CLAT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
@@ -121,20 +119,6 @@ function(cpp_lkm_add_ko_target)
     # Resolve Kbuild dir
     cpp_lkm_resolve_kdir(_kdir "${_CLAT_KDIR}")
 
-    # Resolve objtool mode (global default can be overridden per target).
-    if(_CLAT_OBJTOOL_MODE)
-        set(_objtool_mode "${_CLAT_OBJTOOL_MODE}")
-    else()
-        set(_objtool_mode "${CPP_LKM_OBJTOOL_MODE}")
-    endif()
-    string(TOLOWER "${_objtool_mode}" _objtool_mode)
-    if(NOT _objtool_mode STREQUAL "disable" AND NOT _objtool_mode STREQUAL "keep")
-        message(
-            FATAL_ERROR
-                "Invalid OBJTOOL_MODE '${_objtool_mode}'. Expected one of: disable, keep."
-        )
-    endif()
-
     # Stage + build .ko
     if(_CLAT_ALL)
         set(_all_opt ALL)
@@ -155,8 +139,6 @@ function(cpp_lkm_add_ko_target)
         cpp_lkm_runtime
         KDIR
         "${_kdir}"
-        OBJTOOL_MODE
-        "${_objtool_mode}"
         ${_all_opt}
     )
     if(_CLAT_KERNEL_API_INCLUDE_DIR)
