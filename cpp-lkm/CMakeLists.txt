@@ -20,9 +20,9 @@ set(CPP_LKM_ROOT
     CACHE INTERNAL "cpp-lkm repo root"
 )
 
-# Policy for objtool validation during out-of-tree .ko builds.
-# - disable: emit OBJECT_FILES_NON_STANDARD := y in generated Kbuild Makefile
-# - keep: leave objtool validation unchanged
+# Policy for objtool validation during out-of-tree .ko builds. - disable: emit
+# OBJECT_FILES_NON_STANDARD := y in generated Kbuild Makefile - keep: leave objtool validation
+# unchanged
 set(CPP_LKM_OBJTOOL_MODE
     "disable"
     CACHE STRING "Objtool handling for generated Kbuild module builds (disable|keep)"
