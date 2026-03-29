@@ -1,12 +1,8 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 4.0.0)
 project(my_kernel_module LANGUAGES CXX C)
 
 # So clangd/IDEs get correct includes and flags (see .clangd CompilationDatabase).
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-if(POLICY CMP0127)
-    cmake_policy(SET CMP0127 NEW)
-endif()
 
 set(BUILD_MODE
     "host"
