@@ -20,11 +20,6 @@ target_sources(
 )
 
 add_custom_target(
-    kernel_api_sources
-    SOURCES
-        src/assert_kernel.c
-        src/chardev_kernel.c
-        src/context_kernel.c
-        src/logging_kernel.c
-        src/memory_kernel.c
+    kernel_api_sources SOURCES src/assert_kernel.c src/chardev_kernel.c src/context_kernel.c
+                               src/logging_kernel.c src/memory_kernel.c
 )

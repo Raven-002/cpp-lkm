@@ -15,12 +15,7 @@ function(cpp_lkm_gen_host_bridge)
     cmake_parse_arguments(_HB "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     cpp_lkm_assert_nonempty_vars(
-        "cpp_lkm_gen_host_bridge()"
-        "_HB"
-        MODULE_NAME
-        MODULE_OBJECT
-        MODULE_HEADER
-        KERNEL_INTERFACE
+        "cpp_lkm_gen_host_bridge()" "_HB" MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE
     )
 
     if(NOT _HB_TARGET)
