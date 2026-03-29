@@ -4,7 +4,9 @@
 # Exports:
 #   cpp_lkm_create_kernel_interface(<target> [MODULE_NAME <name>] [KDIR <path>] [ABI_MODE ko])
 #   cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <name> MODULE_OBJECT <Class>
-#                         MODULE_HEADER <header> [KERNEL_INTERFACE <iface>] [KDIR <path>]
+#                         MODULE_HEADER <header> KERNEL_API_SRC_DIR <dir-with-*.c>
+#                         [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
+#                         [KERNEL_INTERFACE <iface>] [KDIR <path>]
 #                         [OBJTOOL_MODE <disable|keep>] [ALL])
 
 include(${CPP_LKM_DIR}/cmake/CppLkmFlags.cmake)
@@ -23,7 +25,7 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 #
 # Creates an INTERFACE target with:
 #   - freestanding C++23 compiler flags
-#   - framework include directories (error.hpp Result alias, kalloc.hpp, kernel_api.h, ...)
+#   - framework include directories (error.hpp Result alias, kalloc.hpp, cpp_lkm/runtime/kernel_api.h shim, ...)
 #   - kernel header directories (if the kernel tree exists)
 #   - kernel ABI compile options (when ABI_MODE is "ko")
 # ---------------------------------------------------------------------------
@@ -83,16 +85,24 @@ endfunction()
 #   1. Links KERNEL_INTERFACE into TARGET (if not already).
 #   2. Generates module_bridge.cpp that placement-news MODULE_OBJECT.
 #   3. Creates <MODULE_NAME>.bridge OBJECT target for the generated bridge.
-#   4. Stages archives + generated C entry point + Kbuild Makefile.
+#   4. Stages archives + generated linux_entry.c + Kbuild Makefile.
 #   5. Creates <MODULE_NAME>_ko custom target that invokes Kbuild.
 # ---------------------------------------------------------------------------
 function(cpp_lkm_add_ko_target)
     set(options ALL)
-    set(oneValueArgs TARGET MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE KDIR
-                     OBJTOOL_MODE
+    set(oneValueArgs TARGET MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_API_SRC_DIR KERNEL_API_INCLUDE_DIR
+                     KERNEL_INTERFACE KDIR OBJTOOL_MODE
     )
     set(multiValueArgs MODULE_INCLUDE_DIRS)
     cmake_parse_arguments(_CLAT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT _CLAT_KERNEL_API_SRC_DIR)
+        message(
+            FATAL_ERROR
+                "cpp_lkm_add_ko_target(): KERNEL_API_SRC_DIR is required (directory of *.c sources "
+                "for cpp_* symbols; compiled only by Kbuild, not the host C compiler)."
+        )
+    endif()
 
     if(NOT _CLAT_KERNEL_INTERFACE)
         set(_CLAT_KERNEL_INTERFACE "${_CLAT_MODULE_NAME}.iface")
@@ -135,13 +145,30 @@ function(cpp_lkm_add_ko_target)
         set(_all_opt "")
     endif()
 
-    cpp_lkm_add_kbuild_stage(
-        MODULE_NAME "${_CLAT_MODULE_NAME}"
-        MODULE_LIB "${_CLAT_TARGET}"
-        BRIDGE_TARGET "${_bridge_target}"
-        RUNTIME_LIB cpp_lkm_runtime
-        KDIR "${_kdir}"
-        OBJTOOL_MODE "${_objtool_mode}"
+    set(_kbuild_stage_args
+        MODULE_NAME
+        "${_CLAT_MODULE_NAME}"
+        MODULE_LIB
+        "${_CLAT_TARGET}"
+        KERNEL_API_SRC_DIR
+        "${_CLAT_KERNEL_API_SRC_DIR}"
+        BRIDGE_TARGET
+        "${_bridge_target}"
+        RUNTIME_LIB
+        cpp_lkm_runtime
+        KDIR
+        "${_kdir}"
+        OBJTOOL_MODE
+        "${_objtool_mode}"
         ${_all_opt}
     )
+    if(_CLAT_KERNEL_API_INCLUDE_DIR)
+        list(
+            APPEND
+            _kbuild_stage_args
+            KERNEL_API_INCLUDE_DIR
+            "${_CLAT_KERNEL_API_INCLUDE_DIR}"
+        )
+    endif()
+    cpp_lkm_add_kbuild_stage(${_kbuild_stage_args})
 endfunction()

@@ -1,12 +1,12 @@
-// Host-mode implementations of the C bridge functions declared in runtime headers.
+// Host-mode implementations of the C bridge functions declared under
+// src/kernel_api/include/kernel_api/.
 //
-// This is the host-mode counterpart to src/runtime/linux_bridge.c:
-//   linux_bridge.c       - Kbuild: wraps real kernel APIs (printk, kmalloc, ...)
-//   mock_kernel_bridge.cpp - Host tests: wraps libc + mock state for the same symbols
+// Host-mode counterpart to src/kernel_api/src/*.c (Kbuild-compiled for the real .ko).
 //
 // Adding a new kernel API bridge:
-//   1. Declare the cpp_* function in include/cpp_lkm/runtime/kernel_api.h.
-//   2. Implement the real wrapper in src/runtime/linux_bridge.c.
+//   1. Declare the cpp_* function in src/kernel_api/include/kernel_api/*.h (and umbrella if
+//   needed).
+//   2. Implement the real wrapper in src/kernel_api/src/*.c (extern "C" exports).
 //   3. Implement the mock wrapper here.
 #include "tests/support/mock_globals.hpp"
 

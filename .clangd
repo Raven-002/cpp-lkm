@@ -1,4 +1,4 @@
-# linux_bridge.c and generated linux_entry.c are only built via Kbuild
+# Generated linux_entry.c is only built via Kbuild
 # (kernel headers required); host compile_commands.json does not include them,
 # so clangd falls back to default flags and floods the editor.
 ---
@@ -6,6 +6,6 @@ CompileFlags:
   CompilationDatabase: builds/host
 ---
 If:
-  PathMatch: .*(linux_bridge|linux_entry)\.c
+  PathMatch: .*linux_entry\.c
 Diagnostics:
   Suppress: "*"

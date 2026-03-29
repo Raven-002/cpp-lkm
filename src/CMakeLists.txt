@@ -1,1 +1,2 @@
+add_subdirectory(kernel_api)
 add_subdirectory(kernel_module)

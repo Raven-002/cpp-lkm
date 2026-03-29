@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20)
 #
 # Then use the two public functions: cpp_lkm_create_kernel_interface(<iface-target> MODULE_NAME
 # <name> [KDIR <path>] [ABI_MODE ko]) cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n>
-# MODULE_OBJECT <C> MODULE_HEADER <h> [ALL])
+# MODULE_OBJECT <C> MODULE_HEADER <h> KERNEL_API_SRC_DIR <dir> [KERNEL_API_INCLUDE_DIR <dir>] [ALL])
 
 # Expose the framework root so helper cmake files can resolve relative paths.
 set(CPP_LKM_DIR

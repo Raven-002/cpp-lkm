@@ -1,23 +1,17 @@
+// Misc character device bridge — implements cpp_userspace_chardev_* from
+// cpp_lkm/runtime/kernel_api.h. Kept as C: kernel mutex / kvmalloc / file_operations
+// patterns are not reliably C++-compatible on recent kernels.
+
 #include <linux/errno.h>
 #include <linux/fs.h>
-#include <linux/kernel.h>
 #include <linux/miscdevice.h>
 #include <linux/mutex.h>
-#include <linux/printk.h>
 #include <linux/slab.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
-typedef long long cpp_ssize_t;
-typedef cpp_ssize_t (*cpp_chardev_read_cb)(void* ctx, void* kbuf, size_t len, long long* pos);
-typedef cpp_ssize_t (*cpp_chardev_write_cb)(void* ctx, const void* kbuf, size_t len,
-                                            long long* pos);
-
-enum
-{
-    CPP_GFP_ATOMIC = 0x2U
-};
+#include "cpp_lkm/runtime/kernel_api.h"
 
 static DEFINE_MUTEX(g_chardev_lock);
 static struct miscdevice g_cpp_miscdev;
@@ -29,7 +23,7 @@ static int g_chardev_registered;
 static ssize_t cpp_chardev_read(struct file* file, char __user* ubuf, size_t len, loff_t* ppos)
 {
     void* kbuf = NULL;
-    long long pos = 0;
+    int64_t pos = 0;
     cpp_ssize_t nread = 0;
 
     (void)file;
@@ -53,7 +47,7 @@ static ssize_t cpp_chardev_read(struct file* file, char __user* ubuf, size_t len
         return -ENOMEM;
     }
 
-    pos = (long long)(*ppos);
+    pos = (int64_t)(*ppos);
     nread = g_chardev_read_cb(g_chardev_ctx, kbuf, len, &pos);
     if (nread > 0)
     {
@@ -74,10 +68,11 @@ static ssize_t cpp_chardev_read(struct file* file, char __user* ubuf, size_t len
     return (ssize_t)nread;
 }
 
-static ssize_t cpp_chardev_write(struct file* file, const char __user* ubuf, size_t len, loff_t* ppos)
+static ssize_t cpp_chardev_write(struct file* file, const char __user* ubuf, size_t len,
+                                 loff_t* ppos)
 {
     void* kbuf = NULL;
-    long long pos = 0;
+    int64_t pos = 0;
     cpp_ssize_t nwritten = 0;
 
     (void)file;
@@ -106,7 +101,7 @@ static ssize_t cpp_chardev_write(struct file* file, const char __user* ubuf, siz
         return -EFAULT;
     }
 
-    pos = (long long)(*ppos);
+    pos = (int64_t)(*ppos);
     nwritten = g_chardev_write_cb(g_chardev_ctx, kbuf, len, &pos);
     if (nwritten >= 0)
     {
@@ -122,52 +117,6 @@ static const struct file_operations g_cpp_fops = {
     .read = cpp_chardev_read,
     .write = cpp_chardev_write,
 };
-
-int cpp_printk(const char* fmt, ...)
-{
-    va_list args;
-    int ret = 0;
-
-    va_start(args, fmt);
-    ret = vprintk(fmt, args);
-    va_end(args);
-    return ret;
-}
-
-void* cpp_kmalloc(size_t size, unsigned int flags)
-{
-    const gfp_t gfp = ((flags & CPP_GFP_ATOMIC) != 0U) ? GFP_ATOMIC : GFP_KERNEL;
-    return kmalloc(size, gfp);
-}
-
-void cpp_kfree(const void* ptr)
-{
-    kfree(ptr);
-}
-
-void cpp_assert_fail(const char* expr, const char* file, int line, const char* func)
-{
-    pr_err("[CPP] assertion failed: %s at %s:%d in %s\n", expr, file, line, func);
-    for (;;)
-    {
-        cpu_relax();
-    }
-}
-
-int cpp_in_atomic(void)
-{
-    return in_atomic() ? 1 : 0;
-}
-
-int cpp_irqs_disabled(void)
-{
-    return irqs_disabled() ? 1 : 0;
-}
-
-int cpp_in_nmi(void)
-{
-    return in_nmi() ? 1 : 0;
-}
 
 int cpp_userspace_chardev_register(const char* name, unsigned int mode, void* ctx,
                                    cpp_chardev_read_cb read_cb, cpp_chardev_write_cb write_cb)

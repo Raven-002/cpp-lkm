@@ -41,9 +41,11 @@ cpp_lkm_create_kernel_interface(
 )
 
 # ---------------------------------------------------------------------------
-# Consumer STATIC library — the actual module implementation.
+# Consumer STATIC library — kernel_api (INTERFACE) + module implementation.
 # ---------------------------------------------------------------------------
 add_subdirectory(src)
+target_link_libraries(cpp_lkm_runtime PUBLIC kernel_api_iface)
+target_link_libraries(my_kernel_module.iface INTERFACE kernel_api_iface)
 
 # ---------------------------------------------------------------------------
 # BUG() gate — verify no BUG() calls in source.
@@ -77,6 +79,8 @@ if(BUILD_KO)
         KernelModule
         MODULE_HEADER
         kernel_module/kernel_module.hpp
+        KERNEL_API_SRC_DIR
+        "${CMAKE_SOURCE_DIR}/src/kernel_api/src"
         KERNEL_INTERFACE
         my_kernel_module.iface
         MODULE_INCLUDE_DIRS

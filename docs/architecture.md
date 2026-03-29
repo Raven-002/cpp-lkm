@@ -19,7 +19,7 @@ cpp-lkm/                   # Reusable framework subproject
       linux_entry.c.in      # Kbuild C entry point template
   include/cpp_lkm/
     common/error.hpp        # ErrorCode, Result<T>, to_errno()
-    runtime/kernel_api.h   # C ABI between C++ code and the kernel bridge
+    runtime/kernel_api.h   # Thin shim → consumer `kernel_api/kernel_api.h`
     runtime/kalloc.hpp     # kalloc<T>(), kalloc_array<T>(), kfree_obj()
     runtime/kernel_module.hpp  # IKernelModule interface
     runtime/module_entry.h # cpp_module_init / cpp_module_exit declarations
@@ -30,9 +30,12 @@ include/my_module/         # Project-specific public headers
   my_kernel_module.hpp     # MyKernelModule : public IKernelModule
   userspace_device.hpp     # UserspaceDevice (miscdevice abstraction)
 
-src/                       # Project-specific implementation
-  my_kernel_module.cpp     # MyKernelModule implementation
-  userspace_device.cpp     # UserspaceDevice + C trampolines
+src/
+  kernel_api/
+    CMakeLists.txt         # kernel_api_iface INTERFACE (includes + *.c for IDE)
+    include/kernel_api/    # C ABI headers (types, memory, chardev, umbrella …)
+    src/*.c                # cpp_* impl.; Kbuild-only compile for .ko
+  kernel_module/           # Tier (d): C++ module logic (STATIC lib for Kbuild)
 
 compat/
   gsl_owner.hpp            # gsl::owner<T*> ownership annotation
@@ -65,6 +68,34 @@ tests/
   test_negative_new.cpp     # Negative link fixture
 ```
 
+## Four build tiers (Kbuild vs CMake)
+
+The out-of-tree module is assembled in layers. **CMake** owns targets, include
+paths, and what gets linked; **Kbuild** (invoked from CMake) compiles the
+kernel C sources and links the final `.ko`.
+
+| Tier | Role | Built by | Location |
+| --- | --- | --- | --- |
+| **(a)** | Module shell | Kbuild | [`linux_entry.c.in`](cpp-lkm/cmake/templates/linux_entry.c.in) |
+| **(b)** | C++ bridge | CMake → archive | [`module_bridge.cpp.in`](cpp-lkm/cmake/templates/module_bridge.cpp.in) |
+| **(c)** | `kernel_api` | CMake + Kbuild | `src/kernel_api/` |
+| **(d)** | User C++ | CMake `STATIC` → archive | `src/kernel_module/` |
+
+Details:
+
+- **(a)** — `MODULE_*`, `module_init` / `module_exit`; Kbuild builds generated
+  `*_linux_entry.c` from the template.
+- **(b)** — Placement-new `MODULE_OBJECT`, `cpp_module_init` / `cpp_module_exit`;
+  CMake `OBJECT` library archived for Kbuild. Templates:
+  `cpp-lkm/cmake/templates/module_bridge.cpp.in`.
+- **(c)** — CMake declares `kernel_api_iface` and stages `*.c`; Kbuild compiles
+  those sources (not the host C compiler).
+
+Tier **(c)** headers are included from C++ via `cpp_lkm/runtime/kernel_api.h`
+(shim to `<kernel_api/kernel_api.h>`). The top-level project links
+`kernel_api_iface` into `cpp_lkm_runtime` and the kernel interface target so the
+include path is available everywhere framework headers are used.
+
 ## Public CMake API
 
 ### `cpp_lkm_create_kernel_interface`
@@ -87,7 +118,9 @@ Creates an `INTERFACE` target that carries:
 
 ```cmake
 cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n> MODULE_OBJECT <C>
-  MODULE_HEADER <h> [OBJTOOL_MODE <disable|keep>] [ALL])
+  MODULE_HEADER <h> KERNEL_API_SRC_DIR <dir>
+  [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
+  [OBJTOOL_MODE <disable|keep>] [ALL])
 ```
 
 Produces `<n>_ko` custom target and `<n>.ko` in the build dir. Internally:
@@ -95,8 +128,13 @@ Produces `<n>_ko` custom target and `<n>.ko` in the build dir. Internally:
 1. Generates `module_bridge.cpp` from the template (instantiates `MODULE_OBJECT`).
 2. Builds `<n>.bridge` OBJECT target.
 3. Generates `linux_entry.c` (Kbuild entry point, `MODULE_LICENSE`, metadata).
-4. Stages archives and generated Kbuild `Makefile` into `kbuild_<n>/`.
-5. Invokes `make -C <kdir> M=<stage-dir> modules`.
+4. Copies `KERNEL_API_SRC_DIR/*.c` into `kbuild_<n>/` and stages archives +
+   Kbuild `Makefile`.
+5. Adds `ccflags-y` for `cpp-lkm/include` and the consumer
+   `KERNEL_API_INCLUDE_DIR` so staged `.c` files resolve `kernel_api/*.h` and
+   the shim.
+6. Invokes `make -C <kdir> M=<stage-dir> modules` (kernel API `.c` files are
+   compiled only by Kbuild).
 
 ### Objtool Policy for C++ Modules
 
@@ -177,26 +215,28 @@ code will compile, but the linker will fail with an undefined reference to
 
 ## The C/C++ Kernel Bridge
 
-Kernel code is written in C. This module exposes its functionality through
-exported C functions, mapped to `extern "C"` wrappers.
+Kernel-facing code uses a C ABI (`cpp_*` symbols). C++ includes the shim
+`cpp-lkm/include/cpp_lkm/runtime/kernel_api.h`, which forwards to
+`<kernel_api/kernel_api.h>` (umbrella under `src/kernel_api/include/kernel_api/`).
 
 **Dual-Implementation Symmetry:**
 
-- Generated `linux_entry.c` (from `linux_entry.c.in`) — The real bridge
-  compiled by Kbuild. Contains `MODULE_LICENSE`, `module_init`/`module_exit`,
-  and forwards to `cpp_module_init`/`cpp_module_exit`.
-- `src/runtime/src/linux_bridge.c` no longer exists in the project root;
-  its role (wrapping `kmalloc`, `printk`, chardev) is now part of the framework's
-  `cpp_lkm/runtime/kernel_api.h` declaration surface. The actual Kbuild C
-  implementation lives in the framework source.
-- `tests/support/mock_kernel_bridge.cpp` — The host-mode counterpart. It
-  forwards `cpp_kmalloc` to `malloc()` (with fail-injection capabilities),
-  `cpp_printk` to `printf()`, etc.
+- **Tier (a)** — Generated `linux_entry.c` (from `linux_entry.c.in`):
+  `MODULE_LICENSE`, `module_init` / `module_exit`, forwarding to
+  `cpp_module_init` / `cpp_module_exit`.
+- **Tier (c)** — Declarations in `src/kernel_api/include/kernel_api/*.h`;
+  implementations in **`src/kernel_api/src/*.c`**. Those `.c` files are
+  **copied into the Kbuild staging directory** and compiled by the kernel build
+  (not the host C compiler). Pass `KERNEL_API_SRC_DIR` to
+  `cpp_lkm_add_ko_target()`; `KERNEL_API_INCLUDE_DIR` defaults to the sibling
+  `include/` directory so `ccflags-y` exposes `kernel_api/*.h` to Kbuild.
+- **Host tests** — `tests/support/mock_kernel_bridge.cpp` implements the same
+  `cpp_*` symbols for user-space (e.g. `malloc` / `printf`).
 
-When a new kernel API feature is needed, declare it in
-`cpp-lkm/include/cpp_lkm/runtime/kernel_api.h`, implement it in the kernel
-bridge (the real `.c` file in the Kbuild tree), and add a mock in
-`tests/support/mock_kernel_bridge.cpp`.
+When adding a new `cpp_*` API, add a header under
+`src/kernel_api/include/kernel_api/`, implement the `.c` next to the other
+kernel_api sources, extend `kernel_api/kernel_api.h` if needed, and add a mock
+in `tests/support/mock_kernel_bridge.cpp`.
 
 ## Extending the Module Implementation (`src/`)
 
@@ -208,7 +248,8 @@ bridge (the real `.c` file in the Kbuild tree), and add a mock in
    allocation); put fallible setup in `init()`; free everything in the
    destructor via `kfree_obj()`.
 4. **Kernel surface**: Do not call Linux internals directly from C++ code.
-   Declare needed operations in `cpp-lkm/include/cpp_lkm/runtime/kernel_api.h`
-   and implement them in the kernel bridge + mock.
+   Declare needed operations in `src/kernel_api/include/kernel_api/*.h`, wire
+   `kernel_api_iface` / `KERNEL_API_SRC_DIR` as in the root `CMakeLists.txt`, and
+   implement in `src/kernel_api/src/*.c` plus the host mock.
 5. **Bridge**: Do not modify `module_bridge.cpp` — it is generated. Only change
    the `MODULE_OBJECT` / `MODULE_HEADER` arguments to `cpp_lkm_add_ko_target`.

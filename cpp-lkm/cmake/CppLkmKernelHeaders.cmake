@@ -27,15 +27,22 @@ function(cpp_lkm_attach_kernel_headers target)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
+    # Kernel source uses arch/x86/ for both i386 and x86_64; uname -m is i686/x86_64.
+    if(_arch STREQUAL "x86_64" OR _arch STREQUAL "i386" OR _arch STREQUAL "i686")
+        set(_karch "x86")
+    else()
+        set(_karch "${_arch}")
+    endif()
+
     target_include_directories(
         ${target}
         INTERFACE "${_kdir}/include"
                   "${_kdir}/include/uapi"
                   "${_kdir}/include/generated"
                   "${_kdir}/include/generated/uapi"
-                  "${_kdir}/arch/${_arch}/include"
-                  "${_kdir}/arch/${_arch}/include/uapi"
-                  "${_kdir}/arch/${_arch}/include/generated"
-                  "${_kdir}/arch/${_arch}/include/generated/uapi"
+                  "${_kdir}/arch/${_karch}/include"
+                  "${_kdir}/arch/${_karch}/include/uapi"
+                  "${_kdir}/arch/${_karch}/include/generated"
+                  "${_kdir}/arch/${_karch}/include/generated/uapi"
     )
 endfunction()
