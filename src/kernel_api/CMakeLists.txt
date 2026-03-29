@@ -19,5 +19,12 @@ target_sources(
               include/kernel_api/types.h
 )
 
-file(GLOB _kernel_api_c CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
-add_custom_target(kernel_api_sources SOURCES ${_kernel_api_c})
+add_custom_target(
+    kernel_api_sources
+    SOURCES
+        src/assert_kernel.c
+        src/chardev_kernel.c
+        src/context_kernel.c
+        src/logging_kernel.c
+        src/memory_kernel.c
+)
