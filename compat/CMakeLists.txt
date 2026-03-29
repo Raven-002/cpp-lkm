@@ -9,6 +9,6 @@ target_sources(
               BASE_DIRS
               "${CMAKE_CURRENT_SOURCE_DIR}/include"
               FILES
-              compat/new_shim.hpp
-              compat/gsl_owner.hpp
+              include/compat/new_shim.hpp
+              include/compat/gsl_owner.hpp
 )
