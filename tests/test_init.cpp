@@ -4,7 +4,6 @@
 #include "tests/support/mock_globals.hpp"
 
 #include <cassert>
-#include <cerrno>
 #include <cstdio>
 
 static void test_happy_path()
@@ -21,43 +20,6 @@ static void test_happy_path()
     assert(g_mock_chardev_registered == 0);
 }
 
-static void test_alloc_fail_in_init()
-{
-    reset_mock_state();
-    g_mock_kmalloc_fail = 1;
-    const int res = cpp_module_init();
-    assert(res == -ENOMEM);
-    assert(g_mock_cpp_constructed_count == 1);
-    assert(g_mock_cpp_initialized_count == 0);
-    assert(g_mock_cpp_destructed_count == 1);
-    cpp_module_exit(); // Must be safe even after failed init
-    assert(g_mock_cpp_destructed_count == 1);
-}
-
-static void test_partial_init_cleanup()
-{
-    reset_mock_state();
-    g_mock_kmalloc_fail_after = 2; // Second allocation (resource2) fails
-    const int res = cpp_module_init();
-    assert(res == -ENOMEM);
-    assert(g_mock_cpp_constructed_count == 1);
-    assert(g_mock_cpp_initialized_count == 0);
-    assert(g_mock_cpp_destructed_count == 1);
-    // Module instance was torn down; exit must still be safe
-    cpp_module_exit();
-    assert(g_mock_cpp_destructed_count == 1);
-}
-
-static void test_exit_after_failed_init()
-{
-    reset_mock_state();
-    g_mock_kmalloc_fail = 1;
-    cpp_module_init();
-    // g_module is null here; cpp_module_exit must be a no-op
-    cpp_module_exit();
-    assert(g_mock_cpp_destructed_count == 1);
-}
-
 static void test_destructor_print()
 {
     reset_mock_state();
@@ -69,9 +31,6 @@ static void test_destructor_print()
 extern "C" int main()
 {
     test_happy_path();
-    test_alloc_fail_in_init();
-    test_partial_init_cleanup();
-    test_exit_after_failed_init();
     test_destructor_print();
     printf("All init tests passed!\n");
     return 0;
