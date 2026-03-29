@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0.0)
+cmake_minimum_required(VERSION 4.3.0)
 project(my_kernel_module LANGUAGES CXX C)
 
 # So clangd/IDEs get correct includes and flags (see .clangd CompilationDatabase).

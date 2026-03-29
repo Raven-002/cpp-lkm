@@ -25,7 +25,7 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 #
 # Creates an INTERFACE target with:
 #   - freestanding C++23 compiler flags
-#   - framework include directories (error.hpp Result alias, kalloc.hpp, cpp_lkm/runtime/kernel_api.h shim, ...)
+#   - framework include directory (cpp_lkm/...) and cpp_lkm_compat (compat/ shims via INTERFACE link)
 #   - kernel header directories (if the kernel tree exists)
 #   - kernel ABI compile options (when ABI_MODE is "ko")
 # ---------------------------------------------------------------------------
@@ -43,12 +43,9 @@ function(cpp_lkm_create_kernel_interface target)
     cpp_lkm_get_cxx_flags(_cxx_flags)
     target_compile_options(${target} INTERFACE ${_cxx_flags})
 
-    # Framework headers (repo root for compat/, framework include/)
-    target_include_directories(
-        ${target}
-        INTERFACE "${CPP_LKM_ROOT}"        # lets #include "compat/new_shim.hpp" resolve
-                  "${CPP_LKM_DIR}/include" # cpp_lkm/common, cpp_lkm/runtime
-    )
+    # Framework headers + compat shims (cpp_lkm_compat exposes compat/ includes)
+    target_link_libraries(${target} INTERFACE cpp_lkm_compat)
+    target_include_directories(${target} INTERFACE "${CPP_LKM_DIR}/include")
 
     # Kernel definitions common to all kernel module targets
     target_compile_definitions(${target} INTERFACE __KERNEL__ MODULE)
