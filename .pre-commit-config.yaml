@@ -2,7 +2,7 @@
 # Run: pre-commit run --all-files
 # Install: pre-commit install
 #
-# Requires: just, uv (Python dev tools), bun, clang-format, clang-tidy
+# Requires: just, uv (dev deps: cmake, clang-format, clang-tidy, cmakelang), bun
 # Bootstrap: uv sync --group dev && bun install
 
 repos:

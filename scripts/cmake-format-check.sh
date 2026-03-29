@@ -14,7 +14,7 @@ if [[ -z "$files" ]]; then
 fi
 fail=0
 for f in $files; do
-  if [[ -f "$f" ]] && ! uv run cmake-format --check "$f"; then
+  if [[ -f "$f" ]] && ! uv run --group dev cmake-format --check "$f"; then
     fail=1
   fi
 done

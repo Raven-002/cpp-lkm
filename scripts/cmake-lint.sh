@@ -13,4 +13,4 @@ if [[ -z "$files" ]]; then
   exit 0
 fi
 # shellcheck disable=SC2086
-uv run cmake-lint $files
+uv run --group dev cmake-lint $files

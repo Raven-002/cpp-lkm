@@ -18,6 +18,8 @@ set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 # ------ Build Configuration ------
 # Preset names match CMakePresets.json configurePresets.
 # Use CMAKE_PRESET=platform just build  to switch the active preset.
+# C/C++/CMake tools come from pyproject.toml dependency-groups.dev (see: just setup-dev-env).
+UV_RUN := "uv run --group dev"
 CMAKE_PRESET := "host"
 KBUILD_DIR := ""
 
@@ -52,18 +54,18 @@ setup-dev-env:
   "$bun" install
 
 configure:
-  cmake --preset "{{CMAKE_PRESET}}"
+  {{UV_RUN}} cmake --preset "{{CMAKE_PRESET}}"
 
 build: configure
-  cmake --build --preset "{{CMAKE_PRESET}}"
+  {{UV_RUN}} cmake --build --preset "{{CMAKE_PRESET}}"
 
 # Regenerates Graphviz output for CMake targets (PUBLIC/INTERFACE/PRIVATE link edges).
 # Requires configure first; outputs under builds/host. Install graphviz for SVG.
 cmake-graph:
   #!/usr/bin/env bash
   set -euo pipefail
-  cmake --preset "{{CMAKE_PRESET}}"
-  cmake --graphviz="builds/host-ko/cmake-deps.dot" -S . -B builds/host-ko
+  {{UV_RUN}} cmake --preset "{{CMAKE_PRESET}}"
+  {{UV_RUN}} cmake --graphviz="builds/host-ko/cmake-deps.dot" -S . -B builds/host-ko
   if command -v dot >/dev/null 2>&1; then
     dot -Tsvg "builds/host-ko/cmake-deps.dot" -o "builds/host-ko/cmake-deps.svg"
     echo "Wrote builds/host-ko/cmake-deps.dot and builds/host-ko/cmake-deps.svg"
@@ -72,13 +74,13 @@ cmake-graph:
   fi
 
 test: build
-  ctest --preset "{{CMAKE_PRESET}}"
+  {{UV_RUN}} ctest --preset "{{CMAKE_PRESET}}"
 
 # ------ QA: Format Checks (Read-Only) ------
 qa-format: qa-format-cpp qa-format-cmake
 
 qa-format-cpp: configure
-  cmake --build --preset "{{CMAKE_PRESET}}" --target format-check
+  {{UV_RUN}} cmake --build --preset "{{CMAKE_PRESET}}" --target format-check
 
 qa-format-cmake:
   @scripts/cmake-format-check.sh
@@ -90,8 +92,8 @@ qa-lint: qa-lint-cpp qa-lint-markdown
 qa-lint-cpp: configure
   #!/usr/bin/env bash
   set -euo pipefail
-  if ! command -v clang-tidy >/dev/null 2>&1; then
-    echo "clang-tidy not found. Install it (e.g. clang-tools-extra) to run lint."
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "uv not found. Install from https://docs.astral.sh/uv/ then run: uv sync --group dev" >&2
     exit 2
   fi
   files="$(bash scripts/clang-tidy-files.sh || true)"
@@ -99,7 +101,7 @@ qa-lint-cpp: configure
     echo "No files found to lint."
     exit 0
   fi
-  clang-tidy -p "builds/{{CMAKE_PRESET}}" $files
+  {{UV_RUN}} clang-tidy -p "builds/{{CMAKE_PRESET}}" $files
 
 qa-lint-markdown:
   @bash scripts/markdownlint.sh
@@ -117,7 +119,7 @@ qa-fix: qa-fix-format qa-fix-lint
 qa-fix-format: qa-fix-format-cpp qa-fix-format-cmake
 
 qa-fix-format-cpp: configure
-  cmake --build --preset "{{CMAKE_PRESET}}" --target format
+  {{UV_RUN}} cmake --build --preset "{{CMAKE_PRESET}}" --target format
 
 qa-fix-format-cmake:
   @scripts/cmake-format-fix.sh
@@ -148,11 +150,11 @@ ko:
   #!/usr/bin/env bash
   set -euo pipefail
   if [[ -n "{{KBUILD_DIR}}" ]]; then
-    cmake --preset host-ko -D KBUILD_DIR="{{KBUILD_DIR}}"
+    {{UV_RUN}} cmake --preset host-ko -D KBUILD_DIR="{{KBUILD_DIR}}"
   else
-    cmake --preset host-ko
+    {{UV_RUN}} cmake --preset host-ko
   fi
-  cmake --build --preset host-ko
+  {{UV_RUN}} cmake --build --preset host-ko
 
 smoke: ko
   #!/usr/bin/env bash

@@ -13,5 +13,5 @@ if [[ -z "$files" ]]; then
   exit 0
 fi
 for f in $files; do
-  [[ -f "$f" ]] && uv run cmake-format -i "$f"
+  [[ -f "$f" ]] && uv run --group dev cmake-format -i "$f"
 done
