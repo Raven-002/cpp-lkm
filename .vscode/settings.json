@@ -1,3 +1,4 @@
 {
-    "cmake.cmakePath": "${workspaceFolder}/.venv/bin/cmake"
+    "cmake.cmakePath": "${workspaceFolder}/.venv/bin/cmake",
+    "cmake.configurePreset": "host"
 }

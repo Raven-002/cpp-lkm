@@ -652,20 +652,19 @@ enforces this as a hard gate.
 
 ```bash
 # Host mode
-cmake -B build -DBUILD_MODE=host
-cmake --build build
-ctest --test-dir build -V
+cmake --preset host
+cmake --build --preset host
+ctest --preset host
 
 # Platform mode (G++12)
-cmake -B build-platform -DBUILD_MODE=platform \
-  -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
-cmake --build build-platform
-ctest --test-dir build-platform -V
+cmake --preset platform -D CMAKE_CXX_COMPILER=/path/to/g++-12.5
+cmake --build --preset platform
+ctest --test-dir builds/platform -V
 
 # CI gate
-cmake -B build-ci -DBUILD_MODE=ci -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
-cmake --build build-ci
-ctest --test-dir build-ci --output-on-failure
+cmake --preset ci -D CMAKE_CXX_COMPILER=/path/to/g++-12.5
+cmake --build --preset ci
+ctest --test-dir builds/ci --output-on-failure
 ```
 
 ---

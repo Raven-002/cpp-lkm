@@ -31,9 +31,9 @@ Compiles using your host compiler (Clang 16+ or GCC 13+) against mock kernel
 headers. Ideal for rapid iteration and unit testing.
 
 ```bash
-cmake -B build -DBUILD_MODE=host
-cmake --build build
-ctest --test-dir build -V
+cmake --preset host
+cmake --build --preset host
+ctest --preset host
 ```
 
 ### 2. Platform Mode
@@ -42,9 +42,9 @@ Compiles using a GCC 12.5.x cross-compiler targeting the actual platform
 architecture, but still links against mock headers for CI test validation.
 
 ```bash
-cmake -B build-platform -DBUILD_MODE=platform -DCMAKE_CXX_COMPILER=/path/to/g++-12.5
-cmake --build build-platform
-ctest --test-dir build-platform -V
+cmake --preset platform -D CMAKE_CXX_COMPILER=/path/to/g++-12.5
+cmake --build --preset platform
+ctest --test-dir builds/platform -V
 ```
 
 ### 3. CI Mode
@@ -67,28 +67,28 @@ By default, **host/dev mode does not build a `.ko`**. To build the kernel
 module artifact:
 
 ```bash
-cmake -B build -DBUILD_MODE=host -DBUILD_KO=ON
-cmake --build build
+cmake --preset host-ko
+cmake --build --preset host-ko
 ```
 
 You can point at a specific kernel build directory:
 
 ```bash
-cmake -B build -DBUILD_MODE=host -DBUILD_KO=ON \
-  -DKBUILD_DIR=/lib/modules/$(uname -r)/build
-cmake --build build
+cmake --preset host-ko \
+  -D KBUILD_DIR=/lib/modules/$(uname -r)/build
+cmake --build --preset host-ko
 ```
 
-The produced artifact is copied to `build/cpp_lkm.ko`.
+The produced artifact is copied to `builds/host-ko/my_kernel_module.ko`.
 
 ## Formatting
 
 If `clang-format` is installed, you can run:
 
 ```bash
-cmake -B build -DBUILD_MODE=host
-cmake --build build --target format
-cmake --build build --target format-check
+cmake --preset host
+cmake --build --preset host --target format
+cmake --build --preset host --target format-check
 ```
 
 ## Development tooling (`uv` + `bun`)

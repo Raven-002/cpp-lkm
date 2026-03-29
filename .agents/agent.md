@@ -47,8 +47,8 @@ reference shape is `CppKernelModule` in `module.hpp` / `module.cpp`.
 
 ## Testing & Workflows
 
-- **Host mode**: `cmake -B build -DBUILD_MODE=host`, `cmake --build build`,
-  `ctest --test-dir build`
+- **Host mode**: `cmake --preset host`, `cmake --build --preset host`,
+  `ctest --preset host` (binary dir: `builds/host`; see `CMakePresets.json`)
 - **Platform/CI mode**: Requires GCC 12.5.x (`-DBUILD_MODE=platform` or
   `-DBUILD_MODE=ci`).
 - **Lint parity rule**: Keep `scripts/clang-tidy-files.sh` as the single source

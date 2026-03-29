@@ -1,5 +1,6 @@
 builds/
-build*/
+/build
+/build-*
 *.o
 *.a
 .cache/
