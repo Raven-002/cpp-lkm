@@ -1,13 +1,15 @@
-# GenModuleBridge.cmake Generates and compiles the module bridge (cpp_module_init / cpp_module_exit)
-# for use in host-mode tests and as part of the consumer STATIC library.
+# GenModuleBridge.cmake Generates and compiles the module bridge
+# (cpp_module_init / cpp_module_exit) for use in host-mode tests and as part of
+# the consumer STATIC library.
 #
-# In BUILD_KO=ON mode the bridge is also compiled by cpp_lkm_add_ko_target as an OBJECT target; in
-# host mode we compile it here and link it into the STATIC lib so tests can call
-# cpp_module_init/exit directly.
+# In BUILD_KO=ON mode the bridge is also compiled by cpp_lkm_add_ko_target as an
+# OBJECT target; in host mode we compile it here and link it into the STATIC lib
+# so tests can call cpp_module_init/exit directly.
 #
-# Usage: cpp_lkm_gen_host_bridge( MODULE_NAME      <name> MODULE_OBJECT    <ClassName> MODULE_HEADER
-# <include/path.hpp> KERNEL_INTERFACE <iface-target> MODULE_INCLUDE_DIRS <dir1> [<dir2> ...]   #
-# include dirs for MODULE_HEADER lookup )
+# Usage: cpp_lkm_gen_host_bridge( MODULE_NAME      <name> MODULE_OBJECT
+# <ClassName> MODULE_HEADER <include/path.hpp> KERNEL_INTERFACE <iface-target>
+# MODULE_INCLUDE_DIRS <dir1> [<dir2> ...]   # include dirs for MODULE_HEADER
+# lookup )
 
 function(cpp_lkm_gen_host_bridge)
     set(oneValueArgs MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE TARGET)

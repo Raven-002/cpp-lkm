@@ -1,5 +1,6 @@
-# cmake/cpp/FormatTargets.cmake Defines the `format`, `format-check`, `cmake-format`,
-# `cmake-format-check`, and `cmake-lint` targets. Included from the root CMakeLists.txt.
+# cmake/cpp/FormatTargets.cmake Defines the `format`, `format-check`,
+# `cmake-format`, `cmake-format-check`, and `cmake-lint` targets. Included from
+# the root CMakeLists.txt.
 
 find_program(CLANG_FORMAT_EXE NAMES clang-format)
 if(CLANG_FORMAT_EXE)

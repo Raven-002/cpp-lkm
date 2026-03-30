@@ -1,4 +1,5 @@
-# compat — freestanding shims (placement new, gsl_owner, …) for kernel / freestanding C++.
+# compat — freestanding shims (placement new, gsl_owner, …) for kernel /
+# freestanding C++.
 cmake_minimum_required(VERSION 4.3.0)
 
 add_library(cpp_lkm_compat INTERFACE)

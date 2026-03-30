@@ -1,7 +1,8 @@
-# NegativeCompileTest.cmake Provides add_negative_compile_test and add_negative_link_test macros.
+# NegativeCompileTest.cmake Provides add_negative_compile_test and
+# add_negative_link_test macros.
 #
-# Reads flags from the my_kernel_module.iface INTERFACE target at configure time so no global
-# LIBKERNEL_* variables are needed.
+# Reads flags from the my_kernel_module.iface INTERFACE target at configure time
+# so no global LIBKERNEL_* variables are needed.
 
 # Collect flags from the interface target into string variables usable in add_custom_target
 # commands. This runs at configure time; genexes that need build-time evaluation are handled via

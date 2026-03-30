@@ -1,59 +1,212 @@
+# =============================================================================
+# cmake-format configuration
+# https://cmake-format.readthedocs.io/en/latest/configuration.html
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Parsing
+# -----------------------------------------------------------------------------
+parse:
+  # Teach cmake-format about custom functions so it can format their
+  # argument lists correctly. Example shown below — remove or extend as needed.
+  additional_commands:
+    # foo:
+    #   flags: [BAR, BAZ]
+    #   kwargs:
+    #     HEADERS: '*'
+    #     SOURCES: '*'
+    #     DEPENDS: '*'
+
+  # Per-command spec overrides (rarely needed).
+  override_spec: {}
+
+  # Tag variables/properties for richer analysis (leave empty if unused).
+  vartags: []
+  proptags: []
+
+
+# -----------------------------------------------------------------------------
+# Formatting
+# -----------------------------------------------------------------------------
 format:
-  # Line width
+  # Set to true to make cmake-format a no-op (useful for gradual rollout).
+  disable: false
+
+  # Maximum line width before wrapping.
   line_width: 100
-  
-  # Tab size
+
+  # Spaces per indent level.
   tab_size: 4
-  use_tab: false
-  
-  # Separate control and function names with a space
+
+  # Use actual tab characters instead of spaces.
+  use_tabchars: false
+
+  # When use_tabchars is true, how to handle fractional indentation:
+  #   'use-space'  — leave fractional indent as spaces
+  #   'round-up'   — round up to the next tab stop
+  fractional_tab_policy: use-space
+
+  # Force vertical layout if an argument group has more sub-groups than this.
+  max_subgroups_hwrap: 2
+
+  # Force vertical layout if a positional argument group exceeds this count.
+  max_pargs_hwrap: 6
+
+  # Invalidate a layout if a cmdline positional group spans more lines than this.
+  max_rows_cmdline: 2
+
+  # Insert a space between flow-control keywords (if/while/foreach) and '('.
   separate_ctrl_name_with_space: false
+
+  # Insert a space between function names and '('.
   separate_fn_name_with_space: false
-  
-  # Uppercase commands (Matches official CMake documentation style)
+
+  # Place the closing ')' on its own line when a call wraps.
+  dangle_parens: false
+
+  # Alignment reference for a dangled ')':
+  #   'prefix'        — align to start of statement
+  #   'prefix-indent' — start of statement + one indent level
+  #   'child'         — align to the column of the arguments
+  dangle_align: prefix
+
+  # Reject nested layouts if the statement name is shorter than this.
+  min_prefix_chars: 4
+
+  # Reject un-nested layouts if the statement name exceeds tab_size by more than this.
+  max_prefix_chars: 10
+
+  # Reject a horizontal-wrap layout if it would exceed this many lines.
+  max_lines_hwrap: 2
+
+  # Line ending style: 'unix' (LF) or 'windows' (CRLF).
+  line_ending: unix
+
+  # Normalise command name casing.
+  #   'canonical' — use the cmake-format canonical form (recommended)
+  #   'lower'     — all lowercase
+  #   'upper'     — all uppercase
+  command_case: canonical
+
+  # Normalise keyword casing: 'lower', 'upper', or 'unchanged'.
   keyword_case: upper
 
-  # Wrap arguments
-  max_pargs_h_wrapped: 3
-  max_subgroups_h_wrapped: 2
-  wrap_arguments: true
+  # Commands that should always be formatted vertically (one arg per line).
+  always_wrap: []
 
-# Parse comments
-parse:
-  emit_reformat_comments: true
-  comment_indent: 2
+  # Sort argument lists that are known to be sortable (e.g. target sources).
+  enable_sort: true
+
+  # Infer sortability automatically without an annotation comment.
+  autosort: false
+
+  # If cmake-format cannot fit content within line_width, error and write
+  # nothing instead of applying the most aggressive fallback layout.
+  require_valid_layout: false
+
+  # Fine-grained layout pass overrides — see docs for advanced usage.
+  layout_passes: {}
+
+
+# -----------------------------------------------------------------------------
+# Comment markup / reflow
+# -----------------------------------------------------------------------------
+markup:
+  # Character used for bulleted list items in reflowed comments.
   bullet_char: '*'
-  enum_char: '.'
 
-commands:
-  target_link_libraries:
-    argument_wrap: always
-    group_wrap: 3
-  target_include_directories:
-    argument_wrap: always
-    group_wrap: 3
-  target_compile_definitions:
-    argument_wrap: always
-    group_wrap: 3
-  set:
-    argument_wrap: auto
+  # Punctuation character after numerals in enumerated lists.
+  enum_char: .
 
+  # Do not reflow the first comment block (preserves copyright/license headers).
+  first_comment_is_literal: true
+
+  # Regex: comment blocks matching this pattern are never reflowed.
+  # literal_comment_pattern: null
+
+  # Regex that marks the start/end of a preformatted fence inside a comment.
+  fence_pattern: '^\s*([`~]{3}[`~]*)(.*)$'
+
+  # Regex for decorative rulers inside comments.
+  ruler_pattern: '^\s*[^\w\s]{3}.*[^\w\s]{3}$'
+
+  # A comment line starting with this token is treated as a trailing comment
+  # for the preceding argument rather than a standalone block.
+  explicit_trailing_pattern: '#<'
+
+  # Hash rulers with at least this many consecutive '#' chars are left as-is.
+  hashruler_min_length: 10
+
+  # Normalise hash rulers: add a space after the first '#' and fill to column width.
+  canonicalize_hashrulers: true
+
+  # Enable comment markup parsing and reflow globally.
+  enable_markup: true
+
+
+# -----------------------------------------------------------------------------
+# Linting  (cmake-lint)
+# -----------------------------------------------------------------------------
 lint:
-  disabled_codes:
-    - C0113  # Missing newline at end of file (formatter handles this)
-    - C0301  # Line too long (formatter handles this)
-    - C0304  # Missing comment header (too noisy for most projects)
-  
-  # Function names that take variadic arguments (to avoid false positives)
-  function_pattern:
-    - target_.*
-    - set_.*
-  
-  # Treat specific variables as global (to avoid 'unused variable' warnings)
-  global_var_pattern:
-    - CMAKE_.*
-    - PROJECT_.*
-    - .*_DIR
-    - .*_PATH
+  # Lint codes to silence, e.g. [C0103, C0301].
+  disabled_codes: []
 
-  fail_on_warning: true
+  # --- Naming conventions ---------------------------------------------------
+  # Functions must be snake_case.
+  function_pattern: '[0-9a-z_]+'
+  # Macros must be UPPER_SNAKE_CASE.
+  macro_pattern: '[0-9A-Z_]+'
+  # Cache / global variables: UPPER_SNAKE_CASE.
+  global_var_pattern:   '[A-Z][0-9A-Z_]+'
+  # Internal global variables: _UPPER_SNAKE_CASE.
+  internal_var_pattern: '_[A-Z][0-9A-Z_]+'
+  # Local variables: lower_snake_case.
+  local_var_pattern:    '[a-z][a-z0-9_]+'
+  # Private directory variables: _lower_snake_case.
+  private_var_pattern:  '_[0-9a-z_]+'
+  # Public directory variables: UPPER_SNAKE_CASE.
+  public_var_pattern:   '[A-Z][0-9A-Z_]+'
+  # Function/macro arguments and loop vars: lower_snake_case.
+  argument_var_pattern: '[a-z][a-z0-9_]+'
+  # Keyword arguments: UPPER_SNAKE_CASE.
+  keyword_pattern: '[A-Z][0-9A-Z_]+'
+
+  # --- Complexity thresholds ------------------------------------------------
+  # C0201: max conditionals inside a loop before the heuristic flags it as
+  # an inline parser.
+  max_conditionals_custom_parser: 2
+
+  # Blank lines between statements.
+  min_statement_spacing: 1
+  max_statement_spacing: 2
+
+  # Function/macro complexity limits.
+  max_returns:    6
+  max_branches:   12
+  max_arguments:  5
+  max_localvars:  15
+  max_statements: 50
+
+
+# -----------------------------------------------------------------------------
+# Encoding
+# -----------------------------------------------------------------------------
+encode:
+  # Emit a UTF-8 BOM at the start of output files (rarely needed).
+  emit_byteorder_mark: false
+
+  input_encoding:  utf-8
+  output_encoding: utf-8
+
+
+# -----------------------------------------------------------------------------
+# Miscellaneous
+# -----------------------------------------------------------------------------
+misc:
+  # Per-command overrides for command_case (only 'command_case' is supported).
+  # Example:
+  #   per_command:
+  #     add_executable:
+  #       command_case: upper
+  per_command: {}

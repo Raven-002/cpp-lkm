@@ -1,6 +1,7 @@
-# Consumer kernel_api: C ABI headers + sources compiled by Kbuild for the real .ko. INTERFACE target
-# carries include path and public headers via FILE_SET; .c files are grouped on a source-holder
-# custom target that cpp_lkm_add_ko_target() consumes via KBUILD_SOURCE_TARGETS.
+# Consumer kernel_api: C ABI headers + sources compiled by Kbuild for the real
+# .ko. INTERFACE target carries include path and public headers via FILE_SET; .c
+# files are grouped on a source-holder custom target that
+# cpp_lkm_add_ko_target() consumes via KBUILD_SOURCE_TARGETS.
 
 add_library(kernel_api_iface INTERFACE)
 target_include_directories(kernel_api_iface INTERFACE "${CMAKE_SOURCE_DIR}/cpp-lkm/include")
