@@ -11,8 +11,8 @@
 
 namespace
 {
-std::string_view write_then_read(KernelFilesHiderServer& server, std::string_view command,
-                                 std::array<char, 512>& buffer)
+static std::string_view write_then_read(KernelFilesHiderServer& server, std::string_view command,
+                                        std::array<char, 512>& buffer)
 {
     std::int64_t pos = 0;
     const cpp_ssize_t nwritten = server.write_kernel(command.data(), command.size(), &pos);

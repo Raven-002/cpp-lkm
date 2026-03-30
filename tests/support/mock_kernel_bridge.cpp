@@ -10,6 +10,7 @@
 //   3. Implement the mock wrapper here.
 #include "kernel_api/chardev.h"
 
+#include <array>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -23,7 +24,7 @@ constexpr size_t k_max_mock_name_len = 63;
 
 struct MockCharDevSlot
 {
-    char name[k_max_mock_name_len + 1U]{};
+    std::array<char, k_max_mock_name_len + 1U> name{};
     size_t name_len = 0;
     void* ctx = nullptr;
     cpp_chardev_read_cb read_cb = nullptr;
@@ -31,30 +32,29 @@ struct MockCharDevSlot
     bool used = false;
 };
 
-MockCharDevSlot g_chardev_slots[k_max_mock_chardev_slots]{};
+std::array<MockCharDevSlot, k_max_mock_chardev_slots> g_chardev_slots{};
 size_t g_chardev_slot_count = 0;
 
-void refresh_registration_state();
+static void refresh_registration_state();
 
-bool names_equal(const MockCharDevSlot& slot, const char* name)
+static bool names_equal(const MockCharDevSlot& slot, const char* name)
 {
-    size_t len = 0;
-    while (len <= k_max_mock_name_len && name[len] != '\0')
+    const size_t len = strnlen(name, k_max_mock_name_len + 1U);
+    if (len > k_max_mock_name_len)
     {
-        ++len;
+        return false;
     }
     if (len != slot.name_len)
     {
         return false;
     }
-    return std::memcmp(slot.name, name, len) == 0;
+    return std::memcmp(slot.name.data(), name, len) == 0;
 }
 
-MockCharDevSlot* find_slot_by_name(const char* name)
+static MockCharDevSlot* find_slot_by_name(const char* name)
 {
-    for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+    for (auto& slot : g_chardev_slots)
     {
-        MockCharDevSlot& slot = g_chardev_slots[idx];
         if (!slot.used)
         {
             continue;
@@ -67,11 +67,10 @@ MockCharDevSlot* find_slot_by_name(const char* name)
     return nullptr;
 }
 
-MockCharDevSlot* find_slot_by_ctx(void* ctx)
+static MockCharDevSlot* find_slot_by_ctx(void* ctx)
 {
-    for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+    for (auto& slot : g_chardev_slots)
     {
-        MockCharDevSlot& slot = g_chardev_slots[idx];
         if (!slot.used)
         {
             continue;
@@ -105,9 +104,9 @@ extern "C"
 
     void cpp_mock_chardev_reset(void)
     {
-        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        for (auto& slot : g_chardev_slots)
         {
-            g_chardev_slots[idx] = MockCharDevSlot{};
+            slot = MockCharDevSlot{};
         }
         g_chardev_slot_count = 0;
         refresh_registration_state();
@@ -204,26 +203,21 @@ extern "C"
             return -16; /* EBUSY */
         }
 
-        size_t name_len = 0;
-        while (name[name_len] != '\0')
+        const size_t name_len = strnlen(name, k_max_mock_name_len + 1U);
+        if (name_len > k_max_mock_name_len)
         {
-            ++name_len;
-            if (name_len > k_max_mock_name_len)
-            {
-                return -22; /* EINVAL */
-            }
+            return -22; /* EINVAL */
         }
 
-        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        for (auto& slot : g_chardev_slots)
         {
-            MockCharDevSlot& slot = g_chardev_slots[idx];
             if (slot.used)
             {
                 continue;
             }
             slot.used = true;
             slot.name_len = name_len;
-            std::memcpy(slot.name, name, name_len);
+            std::memcpy(slot.name.data(), name, name_len);
             slot.name[name_len] = '\0';
             slot.ctx = ctx;
             slot.read_cb = read_cb;
@@ -243,9 +237,8 @@ extern "C"
             return;
         }
 
-        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        for (auto& slot : g_chardev_slots)
         {
-            MockCharDevSlot& slot = g_chardev_slots[idx];
             if (!slot.used)
             {
                 continue;
@@ -282,7 +275,7 @@ extern "C"
     cpp_ssize_t cpp_mock_chardev_simulate_read_named(const char* name, void* kbuf, size_t len,
                                                      std::int64_t* pos)
     {
-        MockCharDevSlot* slot = find_slot_by_name(name);
+        const MockCharDevSlot* slot = find_slot_by_name(name);
         if (slot == nullptr || slot->read_cb == nullptr || slot->ctx == nullptr)
         {
             return -22;
@@ -293,7 +286,7 @@ extern "C"
     cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf,
                                                       size_t len, std::int64_t* pos)
     {
-        MockCharDevSlot* slot = find_slot_by_name(name);
+        const MockCharDevSlot* slot = find_slot_by_name(name);
         if (slot == nullptr || slot->write_cb == nullptr || slot->ctx == nullptr)
         {
             return -22;
@@ -304,7 +297,7 @@ extern "C"
 
 namespace
 {
-void refresh_registration_state()
+static void refresh_registration_state()
 {
     g_mock_chardev_registered_count = static_cast<int>(g_chardev_slot_count);
     g_mock_chardev_registered = static_cast<int>(g_chardev_slot_count > 0U);

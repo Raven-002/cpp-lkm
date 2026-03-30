@@ -39,14 +39,14 @@ class KernelFilesHiderServer final : public IUserspaceDeviceHandler
     [[nodiscard]] static size_t trim_command_len(const char* command, size_t command_len);
     [[nodiscard]] static bool pattern_equals(const HiddenPatternStats& item, const char* pattern,
                                              size_t pattern_len);
-    [[nodiscard]] bool append_to_response(char ch);
+    [[nodiscard]] bool append_to_response(char character);
     [[nodiscard]] bool append_to_response(const char* text, size_t text_len);
     [[nodiscard]] bool append_u64_to_response(std::uint64_t value);
     void wrap_current_content_as_response();
 
-    void hide_pattern_hook(const char* pattern, size_t pattern_len) const;
-    void unhide_pattern_hook(const char* pattern, size_t pattern_len) const;
-    void update_statistics_hook() const;
+    static void hide_pattern_hook(const char* pattern, size_t pattern_len);
+    static void unhide_pattern_hook(const char* pattern, size_t pattern_len);
+    static void update_statistics_hook();
 
     std::array<HiddenPatternStats, k_max_patterns> _hidden_patterns{};
     std::array<char, k_max_response_len> _response_buf{};

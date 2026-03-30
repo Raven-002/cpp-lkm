@@ -249,13 +249,13 @@ bool KernelFilesHiderServer::pattern_equals(const HiddenPatternStats& item, cons
            std::memcmp(item.pattern.data(), pattern, pattern_len) == 0;
 }
 
-bool KernelFilesHiderServer::append_to_response(char ch)
+bool KernelFilesHiderServer::append_to_response(char character)
 {
     if (_response_len >= _response_buf.size())
     {
         return false;
     }
-    _response_buf[_response_len] = ch;
+    _response_buf[_response_len] = character;
     ++_response_len;
     return true;
 }
@@ -296,11 +296,11 @@ bool KernelFilesHiderServer::append_u64_to_response(std::uint64_t value)
 
     while (digits_len > 0U)
     {
-        if (!append_to_response(digits[digits_len - 1U]))
+        --digits_len;
+        if (!append_to_response(digits[digits_len]))
         {
             return false;
         }
-        --digits_len;
     }
     return true;
 }
@@ -316,23 +316,23 @@ void KernelFilesHiderServer::wrap_current_content_as_response()
     set_response(content.data(), content_len);
 }
 
-void KernelFilesHiderServer::hide_pattern_hook(const char* pattern, size_t pattern_len) const
+void KernelFilesHiderServer::hide_pattern_hook(const char* pattern, size_t pattern_len)
 {
-    const size_t max_log_len = static_cast<size_t>(std::numeric_limits<int>::max());
+    const auto max_log_len = static_cast<size_t>(std::numeric_limits<int>::max());
     const int log_len = static_cast<int>(pattern_len < max_log_len ? pattern_len : max_log_len);
     cpp_printk(CPP_KERN_INFO "[CPP] FilesHider hide_pattern_hook called for: %.*s\n", log_len,
                pattern);
 }
 
-void KernelFilesHiderServer::unhide_pattern_hook(const char* pattern, size_t pattern_len) const
+void KernelFilesHiderServer::unhide_pattern_hook(const char* pattern, size_t pattern_len)
 {
-    const size_t max_log_len = static_cast<size_t>(std::numeric_limits<int>::max());
+    const auto max_log_len = static_cast<size_t>(std::numeric_limits<int>::max());
     const int log_len = static_cast<int>(pattern_len < max_log_len ? pattern_len : max_log_len);
     cpp_printk(CPP_KERN_INFO "[CPP] FilesHider unhide_pattern_hook called for: %.*s\n", log_len,
                pattern);
 }
 
-void KernelFilesHiderServer::update_statistics_hook() const
+void KernelFilesHiderServer::update_statistics_hook()
 {
     cpp_printk(CPP_KERN_INFO "[CPP] FilesHider update_statistics_hook called\n");
 }
