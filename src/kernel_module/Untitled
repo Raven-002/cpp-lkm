@@ -1,4 +1,0 @@
-Refactor objtool policy documentation in CMakeLists.txt
-
-- Updated comments in CMakeLists.txt to clarify objtool validation policy for out-of-tree .ko builds.
-- Ensured consistency in documentation style for better readability.
