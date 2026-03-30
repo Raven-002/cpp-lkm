@@ -56,3 +56,36 @@ add_custom_target(
 # Load the public API functions.
 # ---------------------------------------------------------------------------
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CppLkmTargets.cmake")
+
+# Lint-only C target to provide compile_commands entries for clang-tidy on kernel_api C bridge files
+# with kernel-style includes/defines.
+add_library(cpp_lkm_runtime_kernel_api_lint_iface INTERFACE)
+cpp_lkm_get_c_flags(_cpp_lkm_runtime_c_flags)
+target_compile_options(
+    cpp_lkm_runtime_kernel_api_lint_iface
+    INTERFACE $<$<COMPILE_LANGUAGE:C>:${_cpp_lkm_runtime_c_flags}>
+)
+target_compile_definitions(cpp_lkm_runtime_kernel_api_lint_iface INTERFACE __KERNEL__ MODULE)
+cpp_lkm_resolve_kdir(_cpp_lkm_runtime_kdir "")
+cpp_lkm_attach_kernel_headers(
+    cpp_lkm_runtime_kernel_api_lint_iface KDIR "${_cpp_lkm_runtime_kdir}" MODULE_NAME
+    "cpp_lkm_runtime"
+)
+target_compile_options(
+    cpp_lkm_runtime_kernel_api_lint_iface
+    INTERFACE $<$<COMPILE_LANGUAGE:C>:-include${_cpp_lkm_runtime_kdir}/include/generated/autoconf.h>
+              $<$<COMPILE_LANGUAGE:C>:-include${_cpp_lkm_runtime_kdir}/include/linux/kconfig.h>
+)
+if(BUILD_KO)
+    cpp_lkm_attach_kernel_abi(cpp_lkm_runtime_kernel_api_lint_iface)
+endif()
+add_library(
+    cpp_lkm_runtime_kernel_api_lint_objects OBJECT EXCLUDE_FROM_ALL src/kernel_api/context_kernel.c
+                                                   src/kernel_api/memory_kernel.c
+)
+target_link_libraries(
+    cpp_lkm_runtime_kernel_api_lint_objects PRIVATE cpp_lkm_runtime_kernel_api_lint_iface
+)
+target_include_directories(
+    cpp_lkm_runtime_kernel_api_lint_objects PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)

@@ -22,3 +22,11 @@ target_sources(
 add_custom_target(
     kernel_api_sources SOURCES src/assert_kernel.c src/chardev_kernel.c src/logging_kernel.c
 )
+
+# Lint-only C target to emit compile_commands entries for kernel_api C sources.
+add_library(
+    kernel_api_lint_objects OBJECT EXCLUDE_FROM_ALL src/assert_kernel.c src/chardev_kernel.c
+                                   src/context_kernel.c src/logging_kernel.c src/memory_kernel.c
+)
+target_link_libraries(kernel_api_lint_objects PRIVATE "my_kernel_module.c_iface")
+target_include_directories(kernel_api_lint_objects PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

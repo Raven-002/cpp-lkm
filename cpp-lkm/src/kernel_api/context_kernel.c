@@ -1,19 +1,20 @@
 #include <linux/hardirq.h>
 #include <linux/preempt.h>
+#include <stdbool.h>
 
 #include "cpp_lkm/runtime/kernel_api/context.h"
 
-int cpp_in_atomic(void)
+bool cpp_in_atomic(void)
 {
-    return in_atomic() ? 1 : 0;
+    return in_atomic();
 }
 
-int cpp_irqs_disabled(void)
+bool cpp_irqs_disabled(void)
 {
-    return irqs_disabled() ? 1 : 0;
+    return irqs_disabled();
 }
 
-int cpp_in_nmi(void)
+bool cpp_in_nmi(void)
 {
-    return in_nmi() ? 1 : 0;
+    return in_nmi();
 }

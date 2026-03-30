@@ -31,3 +31,23 @@ function(cpp_lkm_get_cxx_flags cxx_flags_out)
         PARENT_SCOPE
     )
 endfunction()
+
+# Computes CPP_LKM_C_FLAGS — freestanding C kernel-compatible compiler flags.
+# Call cpp_lkm_get_c_flags(<out-var>) to obtain the list.
+function(cpp_lkm_get_c_flags c_flags_out)
+    cpp_lkm_assert_nonempty("cpp_lkm_get_c_flags()" "<c_flags_out>" "${c_flags_out}")
+
+    set(_flags
+        -std=gnu11
+        -ffreestanding
+        -fno-stack-protector
+        -Wall
+        -Wextra
+        -Wno-error
+        -Wno-error=unused-parameter
+    )
+    set(${c_flags_out}
+        "${_flags}"
+        PARENT_SCOPE
+    )
+endfunction()

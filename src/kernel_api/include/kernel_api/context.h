@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
 #include "kernel_api/types.h"
 
 #ifdef __cplusplus
@@ -7,9 +10,9 @@ extern "C"
 {
 #endif
 
-    int cpp_in_atomic(void);
-    int cpp_irqs_disabled(void);
-    int cpp_in_nmi(void);
+    bool cpp_in_atomic(void);
+    bool cpp_irqs_disabled(void);
+    bool cpp_in_nmi(void);
 
 #ifdef __cplusplus
 }

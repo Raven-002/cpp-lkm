@@ -42,6 +42,27 @@ cpp_lkm_create_kernel_interface(
     "${_abi_mode}"
 )
 
+# C-only interface for linting kernel_api bridge sources with kernel-like flags/includes.
+add_library(my_kernel_module.c_iface INTERFACE)
+cpp_lkm_get_c_flags(_my_kernel_module_c_flags)
+target_compile_options(
+    "my_kernel_module.c_iface" INTERFACE $<$<COMPILE_LANGUAGE:C>:${_my_kernel_module_c_flags}>
+)
+target_compile_definitions("my_kernel_module.c_iface" INTERFACE __KERNEL__ MODULE)
+cpp_lkm_resolve_kdir(_my_kernel_module_kdir "")
+cpp_lkm_attach_kernel_headers(
+    "my_kernel_module.c_iface" KDIR "${_my_kernel_module_kdir}" MODULE_NAME "my_kernel_module"
+)
+target_compile_options(
+    "my_kernel_module.c_iface"
+    INTERFACE
+        $<$<COMPILE_LANGUAGE:C>:-include${_my_kernel_module_kdir}/include/generated/autoconf.h>
+        $<$<COMPILE_LANGUAGE:C>:-include${_my_kernel_module_kdir}/include/linux/kconfig.h>
+)
+if(BUILD_KO)
+    cpp_lkm_attach_kernel_abi("my_kernel_module.c_iface")
+endif()
+
 # ---------------------------------------------------------------------------
 # Consumer STATIC library — module implementation plus optional project kernel_api.
 # ---------------------------------------------------------------------------
