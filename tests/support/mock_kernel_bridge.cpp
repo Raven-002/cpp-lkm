@@ -8,7 +8,7 @@
 //   needed).
 //   2. Implement the real wrapper in src/kernel_api/src/*.c (extern "C" exports).
 //   3. Implement the mock wrapper here.
-#include "tests/support/mock_globals.hpp"
+#include "kernel_api/chardev.h"
 
 #include <cstdarg>
 #include <cstdint>

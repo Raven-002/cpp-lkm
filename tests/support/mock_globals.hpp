@@ -11,7 +11,7 @@
 //   g_mock_chardev_reg_fail   - next register returns failure (then resets to 0)
 #pragma once
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "cpp_lkm/runtime/kernel_api/types.h"
 
 extern "C"
 {

@@ -1,6 +1,6 @@
 #include "kernel_module/kernel_echo_server.hpp"
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 #include <cstring>
 #include <limits>
@@ -37,10 +37,8 @@ cpp_ssize_t KernelEchoServer::write_kernel(const void* kbuf, size_t len, const s
 
     const size_t cap = k_buf_size - 1U;
     const size_t copy_len = len < cap ? len : cap;
+    std::memset(_write_buf.data(), 0, _write_buf.size());
     memcpy(_write_buf.data(), kbuf, copy_len);
-    // copy_len < k_buf_size is guaranteed by cap and clamp above.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-    _write_buf[copy_len] = '\0';
     _write_len = copy_len;
 
     const auto max_log_len = static_cast<size_t>(std::numeric_limits<int>::max());

@@ -2,7 +2,9 @@
 
 #include "compat/new_shim.hpp" // IWYU pragma: keep
 #include "cpp_lkm/common/error.hpp"
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "cpp_lkm/runtime/kernel_api/context.h"
+#include "cpp_lkm/runtime/kernel_api/memory.h"
+#include "cpp_lkm/runtime/kernel_api/types.h"
 
 #include <cerrno>
 #include <expected>

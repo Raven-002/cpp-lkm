@@ -1,5 +1,5 @@
 // Misc character device bridge — implements cpp_userspace_chardev_* from
-// cpp_lkm/runtime/kernel_api.h. Kept as C: kernel mutex / kvmalloc / file_operations
+// kernel_api/kernel_api.h. Kept as C: kernel mutex / kvmalloc / file_operations
 // patterns are not reliably C++-compatible on recent kernels.
 
 #include <linux/errno.h>
@@ -11,7 +11,7 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 static DEFINE_MUTEX(g_chardev_lock);
 static struct miscdevice g_cpp_miscdev;

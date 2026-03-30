@@ -33,14 +33,20 @@ else()
 endif()
 
 cpp_lkm_create_kernel_interface(
-    "my_kernel_module.iface" MODULE_NAME my_kernel_module ABI_MODE "${_abi_mode}"
+    "my_kernel_module.iface"
+    MODULE_NAME
+    my_kernel_module
+    MODULE_API_HEADER
+    "kernel_api/kernel_api.h"
+    ABI_MODE
+    "${_abi_mode}"
 )
 
 # ---------------------------------------------------------------------------
-# Consumer STATIC library — kernel_api (INTERFACE) + module implementation.
+# Consumer STATIC library — module implementation plus optional project kernel_api.
 # ---------------------------------------------------------------------------
 add_subdirectory(src)
-target_link_libraries(cpp_lkm_runtime PUBLIC kernel_api_iface)
+target_link_libraries(cpp_lkm_runtime PUBLIC "my_kernel_module.iface")
 target_link_libraries("my_kernel_module.iface" INTERFACE kernel_api_iface)
 
 # ---------------------------------------------------------------------------
@@ -75,8 +81,10 @@ if(BUILD_KO)
         KernelModule
         MODULE_HEADER
         kernel_module/kernel_module.hpp
-        KERNEL_API_SRC_DIR
-        "${CMAKE_SOURCE_DIR}/src/kernel_api/src"
+        KBUILD_SOURCE_TARGETS
+        kernel_api_sources
+        KBUILD_INCLUDE_DIRS
+        "${CMAKE_SOURCE_DIR}/src/kernel_api/include"
         KERNEL_INTERFACE
         "my_kernel_module.iface"
         MODULE_INCLUDE_DIRS
@@ -116,6 +124,7 @@ if(NOT BUILD_KO)
     foreach(test_src ${TEST_SRCS})
         get_filename_component(test_name ${test_src} NAME_WE)
         add_executable(${test_name} ${test_src} ${TEST_MOCK_SRC})
+        target_include_directories(${test_name} PRIVATE "${CMAKE_SOURCE_DIR}")
         target_link_libraries(${test_name} PRIVATE kernel_module)
         target_link_options(${test_name} PRIVATE "-Wl,--no-undefined")
         add_test(NAME ${test_name} COMMAND ${test_name})

@@ -2,10 +2,11 @@
 # Public CMake API for the cpp-lkm framework. Included by cpp-lkm/CMakeLists.txt.
 #
 # Exports:
-#   cpp_lkm_create_kernel_interface(<target> [MODULE_NAME <name>] [KDIR <path>] [ABI_MODE ko])
+#   cpp_lkm_create_kernel_interface(<target> [MODULE_NAME <name>] [KDIR <path>]
+#                                   MODULE_API_HEADER <header> [ABI_MODE ko])
 #   cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <name> MODULE_OBJECT <Class>
-#                         MODULE_HEADER <header> KERNEL_API_SRC_DIR <dir-with-*.c>
-#                         [KERNEL_API_INCLUDE_DIR <dir>]  # default: <KERNEL_API_SRC_DIR>/../include
+#                         MODULE_HEADER <header> KBUILD_SOURCE_TARGETS <tgt>...
+#                         [KBUILD_INCLUDE_DIRS <dir>...]
 #                         [KERNEL_INTERFACE <iface>] [KDIR <path>] [ALL])
 
 include("${CPP_LKM_DIR}/../cmake/Utils.cmake")
@@ -20,6 +21,7 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 # cpp_lkm_create_kernel_interface(<target>
 #   [MODULE_NAME <name>]
 #   [KDIR <kernel-build-dir>]
+#   MODULE_API_HEADER <header-path>  # e.g. "project/module_api.h"
 #   [ABI_MODE ko]        # pass "ko" to add ABI-strict flags for real .ko build
 # )
 #
@@ -32,11 +34,14 @@ include(${CPP_LKM_DIR}/cmake/CppLkmKbuild.cmake)
 function(cpp_lkm_create_kernel_interface iface_target)
     cpp_lkm_assert_nonempty("cpp_lkm_create_kernel_interface()" "<iface_target>" "${iface_target}")
 
-    set(oneValueArgs MODULE_NAME KDIR ABI_MODE)
+    set(oneValueArgs MODULE_NAME KDIR MODULE_API_HEADER ABI_MODE)
     cmake_parse_arguments(_CLKI "" "${oneValueArgs}" "" ${ARGN})
 
     if(NOT _CLKI_MODULE_NAME)
         set(_CLKI_MODULE_NAME "${iface_target}")
+    endif()
+    if(NOT _CLKI_MODULE_API_HEADER)
+        message(FATAL_ERROR "cpp_lkm_create_kernel_interface(): MODULE_API_HEADER is required.")
     endif()
 
     add_library(${iface_target} INTERFACE)
@@ -51,6 +56,9 @@ function(cpp_lkm_create_kernel_interface iface_target)
 
     # Kernel definitions common to all kernel module targets
     target_compile_definitions(${iface_target} INTERFACE __KERNEL__ MODULE)
+    target_compile_definitions(${iface_target}
+                               INTERFACE CPP_LKM_MODULE_API_HEADER="<${_CLKI_MODULE_API_HEADER}>"
+    )
 
     # Kernel header paths + KBUILD_MODNAME
     cpp_lkm_resolve_kdir(_kdir "${_CLKI_KDIR}")
@@ -73,6 +81,8 @@ endfunction()
 #   MODULE_OBJECT   <ClassName>           # concrete class implementing IKernelModule
 #   MODULE_HEADER   <include/path.hpp>    # header declaring MODULE_OBJECT (relative to any
 #                                         # include dir reachable from MODULE_LIB's iface)
+#   KBUILD_SOURCE_TARGETS <target>...     # optional project-owned staged .c source targets
+#   [KBUILD_INCLUDE_DIRS <dir>...]        # extra include dirs for staged C compile
 #   [KERNEL_INTERFACE <iface-target>]     # the target from create_kernel_interface;
 #                                         # defaults to <MODULE_NAME>.iface
 #   [KDIR <path>]                         # override kernel build directory
@@ -84,14 +94,13 @@ endfunction()
 #   2. Generates module_bridge.cpp that placement-news MODULE_OBJECT.
 #   3. Creates <MODULE_NAME>.bridge OBJECT target for the generated bridge.
 #   4. Stages archives + generated linux_entry.c + Kbuild Makefile.
+#      Also stages cpp-lkm runtime C bridge sources (memory/context) automatically.
 #   5. Creates <MODULE_NAME>_ko custom target that invokes Kbuild.
 # ---------------------------------------------------------------------------
 function(cpp_lkm_add_ko_target)
     set(options ALL)
-    set(oneValueArgs TARGET MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_API_SRC_DIR KERNEL_API_INCLUDE_DIR
-                     KERNEL_INTERFACE KDIR
-    )
-    set(multiValueArgs MODULE_INCLUDE_DIRS)
+    set(oneValueArgs TARGET MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE KDIR)
+    set(multiValueArgs MODULE_INCLUDE_DIRS KBUILD_SOURCE_TARGETS KBUILD_INCLUDE_DIRS)
     cmake_parse_arguments(_CLAT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     cpp_lkm_assert_nonempty_vars(
@@ -103,17 +112,11 @@ function(cpp_lkm_add_ko_target)
         MODULE_HEADER
     )
 
-    if(NOT _CLAT_KERNEL_API_SRC_DIR)
-        message(
-            FATAL_ERROR
-                "cpp_lkm_add_ko_target(): KERNEL_API_SRC_DIR is required (directory of *.c sources "
-                "for cpp_* symbols; compiled only by Kbuild, not the host C compiler)."
-        )
-    endif()
-
     if(NOT _CLAT_KERNEL_INTERFACE)
         set(_CLAT_KERNEL_INTERFACE "${_CLAT_MODULE_NAME}.iface")
     endif()
+
+    set(_clat_kbuild_sources ${_CLAT_KBUILD_SOURCE_TARGETS} cpp_lkm_runtime_kernel_api_sources)
 
     # Ensure runtime objects are built with kernel/freestanding flags in ko mode.
     target_link_libraries(cpp_lkm_runtime PUBLIC ${_CLAT_KERNEL_INTERFACE})
@@ -143,8 +146,8 @@ function(cpp_lkm_add_ko_target)
         "${_CLAT_MODULE_NAME}"
         MODULE_LIB
         "${_CLAT_TARGET}"
-        KERNEL_API_SRC_DIR
-        "${_CLAT_KERNEL_API_SRC_DIR}"
+        SOURCE_TARGETS
+        ${_clat_kbuild_sources}
         BRIDGE_TARGET
         "${_bridge_target}"
         RUNTIME_LIB
@@ -153,13 +156,8 @@ function(cpp_lkm_add_ko_target)
         "${_kdir}"
         ${_all_opt}
     )
-    if(_CLAT_KERNEL_API_INCLUDE_DIR)
-        list(
-            APPEND
-            _kbuild_stage_args
-            KERNEL_API_INCLUDE_DIR
-            "${_CLAT_KERNEL_API_INCLUDE_DIR}"
-        )
+    if(_CLAT_KBUILD_INCLUDE_DIRS)
+        list(APPEND _kbuild_stage_args INCLUDE_DIRS ${_CLAT_KBUILD_INCLUDE_DIRS})
     endif()
     cpp_lkm_add_kbuild_stage(${_kbuild_stage_args})
 endfunction()

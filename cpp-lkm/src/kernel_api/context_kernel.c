@@ -1,7 +1,7 @@
 #include <linux/hardirq.h>
 #include <linux/preempt.h>
 
-#include "kernel_api/kernel_api.h"
+#include "cpp_lkm/runtime/kernel_api/context.h"
 
 int cpp_in_atomic(void)
 {

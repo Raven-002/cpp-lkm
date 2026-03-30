@@ -1,7 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/printk.h>
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 int cpp_printk(const char* fmt, ...)
 {

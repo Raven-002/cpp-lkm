@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <utility>
 
+namespace
+{
 class TestObj
 {
   public:
@@ -34,6 +36,7 @@ class TestObj
 };
 
 int TestObj::destructor_count = 0;
+} // namespace
 
 // ---- GFP flag selection ----
 
@@ -109,8 +112,7 @@ static void test_kalloc_array_overflow_guard()
 
 static void test_kfree_obj_null()
 {
-    TestObj* ptr = nullptr;
-    kfree_obj(ptr); // Must be a silent no-op
+    kfree_obj<TestObj>(nullptr); // Must be a silent no-op
 }
 
 static void test_kfree_obj_calls_destructor()

@@ -5,8 +5,9 @@ cmake_minimum_required(VERSION 4.3.0)
 # Add this to your project with: add_subdirectory(cpp-lkm)
 #
 # Then use the two public functions: cpp_lkm_create_kernel_interface(<iface-target> MODULE_NAME
-# <name> [KDIR <path>] [ABI_MODE ko]) cpp_lkm_add_ko_target(TARGET <lib> MODULE_NAME <n>
-# MODULE_OBJECT <C> MODULE_HEADER <h> KERNEL_API_SRC_DIR <dir> [KERNEL_API_INCLUDE_DIR <dir>] [ALL])
+# <name> MODULE_API_HEADER <header> [KDIR <path>] [ABI_MODE ko]) cpp_lkm_add_ko_target(TARGET <lib>
+# MODULE_NAME <n> MODULE_OBJECT <C> MODULE_HEADER <h> KBUILD_SOURCE_TARGETS <target>...
+# [KBUILD_INCLUDE_DIRS <dir>...] [ALL])
 
 # Expose the framework root so helper cmake files can resolve relative paths.
 set(CPP_LKM_DIR
@@ -32,7 +33,10 @@ target_sources(
            "${CMAKE_CURRENT_SOURCE_DIR}/include"
            FILES
            include/cpp_lkm/common/error.hpp
-           include/cpp_lkm/runtime/kernel_api.h
+           include/cpp_lkm/runtime/kernel_api/context.h
+           include/cpp_lkm/runtime/kernel_api/kernel_api.h
+           include/cpp_lkm/runtime/kernel_api/memory.h
+           include/cpp_lkm/runtime/kernel_api/types.h
            include/cpp_lkm/runtime/kalloc.hpp
            include/cpp_lkm/runtime/kernel_module.hpp
            include/cpp_lkm/runtime/module_entry.h
@@ -41,6 +45,12 @@ target_sources(
 target_compile_features(cpp_lkm_runtime PUBLIC cxx_std_23)
 # Runtime itself does not carry ABI/kernel flags — those come from the interface target that the
 # consumer attaches.
+
+# Runtime C bridge symbols compiled by Kbuild for .ko targets.
+add_custom_target(
+    cpp_lkm_runtime_kernel_api_sources SOURCES src/kernel_api/context_kernel.c
+                                               src/kernel_api/memory_kernel.c
+)
 
 # ---------------------------------------------------------------------------
 # Load the public API functions.

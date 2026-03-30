@@ -7,7 +7,6 @@
 #include "compat/new_shim.hpp"   // IWYU pragma: keep
 #include "cpp_lkm/runtime/kernel_module.hpp"
 #include "cpp_lkm/runtime/module_entry.h"
-#include "cpp_lkm/runtime/kernel_api.h"
 
 // The concrete module class provided by the consumer.
 #include "@CPP_LKM_MODULE_HEADER@"
@@ -18,11 +17,13 @@ namespace std
 void __glibcxx_assert_fail(const char* file, int line, const char* function,
                            const char* condition) noexcept
 {
-    cpp_printk(CPP_KERN_ERR "[CPP] ASSERTION FAILED: %s:%d in %s: %s\n", file, line, function,
-               condition);
+    (void)file;
+    (void)line;
+    (void)function;
+    (void)condition;
     while (true)
     {
-    } // Halting execution without calling the bug macro
+    } // Minimal hard stop in freestanding kernel code.
 }
 } // namespace std
 // NOLINTEND(cert-dcl58-cpp)

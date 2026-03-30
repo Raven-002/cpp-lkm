@@ -1,7 +1,7 @@
 // Host-test helpers to exercise the char-device bridge without a real /dev node.
 #pragma once
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 #include <cstddef>
 #include <cstdint>

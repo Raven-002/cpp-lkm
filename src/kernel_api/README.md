@@ -1,7 +1,8 @@
 # Consumer kernel API (`cpp_*` bridge)
 
-This directory is **tier (c)** in the build: C headers and sources that implement the symbols used
-by C++ through `cpp_lkm/runtime/kernel_api.h` (a thin shim to `<kernel_api/kernel_api.h>`).
+This directory is **project-owned tier (c)** in the build: C headers and sources for APIs consumed
+by module code through `<kernel_api/kernel_api.h>` (logging/chardev/assert and any project-specific
+extensions).
 
 | Tier | What | Build |
 |------|------|--------|
@@ -13,27 +14,27 @@ by C++ through `cpp_lkm/runtime/kernel_api.h` (a thin shim to `<kernel_api/kerne
 ## Layout
 
 - `include/kernel_api/` — Public C ABI: `types.h`, `memory.h`, `chardev.h`, umbrella `kernel_api.h`, …
-- `src/*.c` — Implementations (`cpp_printk`, `cpp_kmalloc`, chardev, …). Not compiled by the host
-  toolchain for the module; `cpp_lkm_add_ko_target()` copies them into the Kbuild stage directory.
+- `src/*.c` — Implementations (`cpp_printk`, chardev, assert, …). Not compiled by the host toolchain
+  for the module; `cpp_lkm_add_ko_target()` copies them into the Kbuild stage directory.
 
 ## CMake
 
-- [`CMakeLists.txt`](CMakeLists.txt) defines **`kernel_api_iface`** (`INTERFACE`): include directory for
-  `<kernel_api/…>`. A **`kernel_api_sources`** custom target lists the `.c` files for the IDE only
-  (those files must not be compiled with the host toolchain; Kbuild compiles them for the `.ko`).
-- The top-level project must link this into **`cpp_lkm_runtime`** and the kernel interface target so
-  the shim and `kalloc.hpp` resolve `<kernel_api/kernel_api.h>`:
+- [`CMakeLists.txt`](CMakeLists.txt) defines **`kernel_api_iface`** (`INTERFACE`) for `<kernel_api/…>`
+  includes and **`kernel_api_sources`** as the source-holder target for staged `.c` files.
+- The top-level project links this into the kernel interface target for module-level includes:
 
   ```cmake
-  target_link_libraries(cpp_lkm_runtime PUBLIC kernel_api_iface)
   target_link_libraries(my_kernel_module.iface INTERFACE kernel_api_iface)
   ```
 
 ## Kbuild
 
-- Pass `KERNEL_API_SRC_DIR` to `cpp_lkm_add_ko_target()` (this `src/` directory).
-- `KERNEL_API_INCLUDE_DIR` defaults to `../include` next to that `src/` so Kbuild gets
-  `ccflags-y += -I…/include` for `#include "kernel_api/…"`.
+- Pass `KBUILD_SOURCE_TARGETS kernel_api_sources` to `cpp_lkm_add_ko_target()`.
+- Pass `KBUILD_INCLUDE_DIRS <path-to-include>` so staged `.c` files resolve
+  `#include "kernel_api/..."`.
+
+`cpp-lkm` runtime now owns its own minimal memory/context bridge under
+`cpp-lkm/include/cpp_lkm/runtime/kernel_api/` and stages its required C sources automatically.
 
 Host tests link `tests/support/mock_kernel_bridge.cpp` instead of these `.c` files.
 

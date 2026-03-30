@@ -5,7 +5,7 @@
 // Placement new (operator new(size_t, void*)) is defined in compat/new_shim.hpp
 // and is the only permitted form of new in this codebase.
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "cpp_lkm/runtime/kernel_api/memory.h"
 
 // operator new(size_t) — declared by the standard headers, intentionally NOT defined.
 // The linker will error if any TU calls heap-form new.

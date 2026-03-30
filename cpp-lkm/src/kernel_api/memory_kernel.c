@@ -1,6 +1,6 @@
 #include <linux/slab.h>
 
-#include "kernel_api/kernel_api.h"
+#include "cpp_lkm/runtime/kernel_api/memory.h"
 
 enum
 {

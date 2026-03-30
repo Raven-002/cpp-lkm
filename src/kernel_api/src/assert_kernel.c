@@ -2,7 +2,7 @@
 #include <linux/printk.h>
 #include <linux/processor.h>
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 void cpp_assert_fail(const char* expr, const char* file, int line, const char* func)
 {

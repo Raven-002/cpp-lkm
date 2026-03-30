@@ -1,6 +1,6 @@
 #include "kernel_module/kernel_module.hpp"
 
-#include "cpp_lkm/runtime/kernel_api.h"
+#include "kernel_api/kernel_api.h"
 
 KernelModule::KernelModule() : _userspace(_echo_server)
 {
