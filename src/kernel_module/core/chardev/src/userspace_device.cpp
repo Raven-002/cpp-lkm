@@ -1,4 +1,4 @@
-#include "kernel_module/userspace_device.hpp"
+#include "kernel_module/core/chardev/userspace_device.hpp"
 
 static cpp_ssize_t userspace_read_impl(void* ctx, void* kbuf, size_t len, std::int64_t* pos)
 {

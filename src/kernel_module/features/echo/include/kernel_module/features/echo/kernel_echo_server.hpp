@@ -1,6 +1,6 @@
 #pragma once
 
-#include "userspace_device.hpp"
+#include "kernel_module/core/chardev/ihandler.hpp"
 
 #include <array>
 #include <cstddef>

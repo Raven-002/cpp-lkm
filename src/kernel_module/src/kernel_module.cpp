@@ -9,7 +9,8 @@ KernelModule::KernelModule() : _userspace(_echo_server)
 
 Result<void> KernelModule::init()
 {
-    if (auto usr_init = _userspace.init(); !usr_init)
+    auto usr_init = _userspace.init();
+    if (!usr_init)
     {
         return usr_init;
     }

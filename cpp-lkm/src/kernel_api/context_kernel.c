@@ -1,6 +1,6 @@
 #include <linux/hardirq.h>
 #include <linux/preempt.h>
-#include <stdbool.h>
+#include <linux/types.h>
 
 #include "cpp_lkm/runtime/kernel_api/context.h"
 

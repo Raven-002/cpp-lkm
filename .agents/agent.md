@@ -47,8 +47,11 @@ reference shape is `CppKernelModule` in `module.hpp` / `module.cpp`.
 
 ## Testing & Workflows
 
-- **Host mode**: `cmake --preset host`, `cmake --build --preset host`,
-  `ctest --preset host` (binary dir: `builds/host`; see `CMakePresets.json`)
+- **Use `uv run` for CMake tools**: run CMake and CTest via `uv run` so the
+  project-pinned toolchain is used in all environments.
+- **Host mode**: `uv run cmake --preset host`,
+  `uv run cmake --build --preset host`, `uv run ctest --preset host`
+  (binary dir: `builds/host`; see `CMakePresets.json`)
 - **Platform/CI mode**: Requires GCC 12.5.x (`-DBUILD_MODE=platform` or
   `-DBUILD_MODE=ci`).
 - **Lint parity rule**: Keep `scripts/clang-tidy-files.sh` as the single source

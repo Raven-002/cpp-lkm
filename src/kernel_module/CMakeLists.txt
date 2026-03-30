@@ -1,5 +1,10 @@
-add_library(
-    kernel_module STATIC src/kernel_module.cpp src/userspace_device.cpp src/kernel_echo_server.cpp
+add_subdirectory(core/chardev)
+add_subdirectory(features/echo)
+
+add_library(kernel_module STATIC src/kernel_module.cpp)
+target_sources(
+    kernel_module PRIVATE $<TARGET_OBJECTS:kernel_module_chardev>
+                          $<TARGET_OBJECTS:kernel_module_echo>
 )
 
 target_sources(
@@ -10,8 +15,10 @@ target_sources(
            "${CMAKE_CURRENT_SOURCE_DIR}/include"
            FILES
            include/kernel_module/kernel_module.hpp
-           include/kernel_module/userspace_device.hpp
-           include/kernel_module/kernel_echo_server.hpp
+           include/kernel_module/errors.hpp
 )
 
-target_link_libraries(kernel_module PUBLIC "my_kernel_module.iface" cpp_lkm_runtime)
+target_link_libraries(
+    kernel_module PUBLIC "my_kernel_module.iface" cpp_lkm_runtime kernel_module_chardev
+                         kernel_module_echo
+)

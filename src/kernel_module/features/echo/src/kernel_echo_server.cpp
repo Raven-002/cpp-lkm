@@ -1,4 +1,4 @@
-#include "kernel_module/kernel_echo_server.hpp"
+#include "kernel_module/features/echo/kernel_echo_server.hpp"
 
 #include "kernel_api/kernel_api.h"
 

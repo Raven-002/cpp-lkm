@@ -110,6 +110,8 @@ if(BUILD_KO)
         "my_kernel_module.iface"
         MODULE_INCLUDE_DIRS
         "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
         ALL
     )
 else()
@@ -126,6 +128,8 @@ else()
         "my_kernel_module.iface"
         MODULE_INCLUDE_DIRS
         "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
     )
 endif()
 
