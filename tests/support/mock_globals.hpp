@@ -7,7 +7,8 @@
 //   g_mock_irqs_disabled      - non-zero -> cpp_irqs_disabled() returns true
 //   g_mock_in_nmi             - non-zero -> cpp_in_nmi() returns true
 //   g_mock_cpp_*_count        - message counters extracted from cpp_printk output
-//   g_mock_chardev_registered - set by mock cpp_userspace_chardev_register/unregister
+//   g_mock_chardev_registered - true if at least one mock char device is registered
+//   g_mock_chardev_registered_count - number of currently registered mock char devices
 //   g_mock_chardev_reg_fail   - next register returns failure (then resets to 0)
 #pragma once
 
@@ -26,7 +27,9 @@ extern "C"
     extern int g_mock_cpp_initialized_count;
     extern int g_mock_cpp_destructed_count;
     extern int g_mock_chardev_registered;
+    extern int g_mock_chardev_registered_count;
     extern int g_mock_chardev_reg_fail;
+    void cpp_mock_chardev_reset(void);
 }
 
 // Call at the start of every test to ensure clean mock state.
@@ -42,5 +45,7 @@ inline void reset_mock_state() noexcept
     g_mock_cpp_initialized_count = 0;
     g_mock_cpp_destructed_count = 0;
     g_mock_chardev_registered = 0;
+    g_mock_chardev_registered_count = 0;
     g_mock_chardev_reg_fail = 0;
+    cpp_mock_chardev_reset();
 }

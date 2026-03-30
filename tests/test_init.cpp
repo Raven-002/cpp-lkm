@@ -15,9 +15,11 @@ static void test_happy_path()
     assert(g_mock_cpp_initialized_count == 1);
     assert(g_mock_cpp_destructed_count == 0);
     assert(g_mock_chardev_registered == 1);
+    assert(g_mock_chardev_registered_count == 2);
     cpp_module_exit();
     assert(g_mock_cpp_destructed_count == 1);
     assert(g_mock_chardev_registered == 0);
+    assert(g_mock_chardev_registered_count == 0);
 }
 
 static void test_destructor_print()

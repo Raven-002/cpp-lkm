@@ -112,6 +112,7 @@ if(BUILD_KO)
         "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/files_hider/include"
         ALL
     )
 else()
@@ -130,6 +131,7 @@ else()
         "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/files_hider/include"
     )
 endif()
 
@@ -141,7 +143,7 @@ include(cmake/testing/NegativeCompileTest.cmake)
 
 if(NOT BUILD_KO)
     set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
-                  tests/test_userspace_device.cpp
+                  tests/test_userspace_device.cpp tests/test_files_hider_api.cpp
     )
     # mock_kernel_bridge.cpp provides host-mode kernel API stubs.
     set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)

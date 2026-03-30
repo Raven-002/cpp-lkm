@@ -7,7 +7,7 @@
 class UserspaceDevice
 {
   public:
-    explicit UserspaceDevice(IUserspaceDeviceHandler& handler);
+    explicit UserspaceDevice(IUserspaceDeviceHandler& handler, const char* device_name);
 
     UserspaceDevice(const UserspaceDevice&) = delete;
     UserspaceDevice& operator=(const UserspaceDevice&) = delete;
@@ -23,5 +23,6 @@ class UserspaceDevice
 
   private:
     IUserspaceDeviceHandler* _handler = nullptr;
+    const char* _device_name = nullptr;
     bool _registered = false;
 };

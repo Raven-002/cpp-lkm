@@ -18,9 +18,71 @@
 
 namespace
 {
-cpp_chardev_read_cb g_chardev_read_cb = nullptr;
-cpp_chardev_write_cb g_chardev_write_cb = nullptr;
-void* g_chardev_ctx = nullptr;
+constexpr size_t k_max_mock_chardev_slots = 8;
+constexpr size_t k_max_mock_name_len = 63;
+
+struct MockCharDevSlot
+{
+    char name[k_max_mock_name_len + 1U]{};
+    size_t name_len = 0;
+    void* ctx = nullptr;
+    cpp_chardev_read_cb read_cb = nullptr;
+    cpp_chardev_write_cb write_cb = nullptr;
+    bool used = false;
+};
+
+MockCharDevSlot g_chardev_slots[k_max_mock_chardev_slots]{};
+size_t g_chardev_slot_count = 0;
+
+void refresh_registration_state();
+
+bool names_equal(const MockCharDevSlot& slot, const char* name)
+{
+    size_t len = 0;
+    while (len <= k_max_mock_name_len && name[len] != '\0')
+    {
+        ++len;
+    }
+    if (len != slot.name_len)
+    {
+        return false;
+    }
+    return std::memcmp(slot.name, name, len) == 0;
+}
+
+MockCharDevSlot* find_slot_by_name(const char* name)
+{
+    for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+    {
+        MockCharDevSlot& slot = g_chardev_slots[idx];
+        if (!slot.used)
+        {
+            continue;
+        }
+        if (names_equal(slot, name))
+        {
+            return &slot;
+        }
+    }
+    return nullptr;
+}
+
+MockCharDevSlot* find_slot_by_ctx(void* ctx)
+{
+    for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+    {
+        MockCharDevSlot& slot = g_chardev_slots[idx];
+        if (!slot.used)
+        {
+            continue;
+        }
+        if (slot.ctx == ctx)
+        {
+            return &slot;
+        }
+    }
+    return nullptr;
+}
 } // namespace
 
 extern "C"
@@ -38,7 +100,18 @@ extern "C"
     int g_mock_cpp_initialized_count = 0;
     int g_mock_cpp_destructed_count = 0;
     int g_mock_chardev_registered = 0;
+    int g_mock_chardev_registered_count = 0;
     int g_mock_chardev_reg_fail = 0;
+
+    void cpp_mock_chardev_reset(void)
+    {
+        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        {
+            g_chardev_slots[idx] = MockCharDevSlot{};
+        }
+        g_chardev_slot_count = 0;
+        refresh_registration_state();
+    }
 
     // ----- Bridge implementations -----
 
@@ -116,43 +189,124 @@ extern "C"
     int cpp_userspace_chardev_register(const char* name, unsigned int mode, void* ctx,
                                        cpp_chardev_read_cb read_cb, cpp_chardev_write_cb write_cb)
     {
-        (void)name;
         (void)mode;
+        if (name == nullptr || ctx == nullptr || read_cb == nullptr || write_cb == nullptr)
+        {
+            return -22; /* EINVAL */
+        }
         if (g_mock_chardev_reg_fail != 0)
         {
             g_mock_chardev_reg_fail = 0;
             return -5; /* EIO */
         }
-        g_chardev_ctx = ctx;
-        g_chardev_read_cb = read_cb;
-        g_chardev_write_cb = write_cb;
-        g_mock_chardev_registered = 1;
-        return 0;
+        if (find_slot_by_ctx(ctx) != nullptr || find_slot_by_name(name) != nullptr)
+        {
+            return -16; /* EBUSY */
+        }
+
+        size_t name_len = 0;
+        while (name[name_len] != '\0')
+        {
+            ++name_len;
+            if (name_len > k_max_mock_name_len)
+            {
+                return -22; /* EINVAL */
+            }
+        }
+
+        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        {
+            MockCharDevSlot& slot = g_chardev_slots[idx];
+            if (slot.used)
+            {
+                continue;
+            }
+            slot.used = true;
+            slot.name_len = name_len;
+            std::memcpy(slot.name, name, name_len);
+            slot.name[name_len] = '\0';
+            slot.ctx = ctx;
+            slot.read_cb = read_cb;
+            slot.write_cb = write_cb;
+            ++g_chardev_slot_count;
+            refresh_registration_state();
+            return 0;
+        }
+
+        return -12; /* ENOMEM */
     }
 
-    void cpp_userspace_chardev_unregister(void)
+    void cpp_userspace_chardev_unregister(void* ctx)
     {
-        g_chardev_ctx = nullptr;
-        g_chardev_read_cb = nullptr;
-        g_chardev_write_cb = nullptr;
-        g_mock_chardev_registered = 0;
+        if (ctx == nullptr)
+        {
+            return;
+        }
+
+        for (size_t idx = 0; idx < k_max_mock_chardev_slots; ++idx)
+        {
+            MockCharDevSlot& slot = g_chardev_slots[idx];
+            if (!slot.used)
+            {
+                continue;
+            }
+            if (slot.ctx == ctx)
+            {
+                slot = MockCharDevSlot{};
+                if (g_chardev_slot_count > 0U)
+                {
+                    --g_chardev_slot_count;
+                }
+                break;
+            }
+        }
+
+        refresh_registration_state();
     }
+
+    cpp_ssize_t cpp_mock_chardev_simulate_read_named(const char* name, void* kbuf, size_t len,
+                                                     std::int64_t* pos);
+    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf, size_t len,
+                                                      std::int64_t* pos);
 
     cpp_ssize_t cpp_mock_chardev_simulate_read(void* kbuf, size_t len, std::int64_t* pos)
     {
-        if (g_chardev_read_cb == nullptr || g_chardev_ctx == nullptr)
-        {
-            return -22;
-        }
-        return g_chardev_read_cb(g_chardev_ctx, kbuf, len, pos);
+        return cpp_mock_chardev_simulate_read_named("cpp_lkm", kbuf, len, pos);
     }
 
     cpp_ssize_t cpp_mock_chardev_simulate_write(const void* kbuf, size_t len, std::int64_t* pos)
     {
-        if (g_chardev_write_cb == nullptr || g_chardev_ctx == nullptr)
+        return cpp_mock_chardev_simulate_write_named("cpp_lkm", kbuf, len, pos);
+    }
+
+    cpp_ssize_t cpp_mock_chardev_simulate_read_named(const char* name, void* kbuf, size_t len,
+                                                     std::int64_t* pos)
+    {
+        MockCharDevSlot* slot = find_slot_by_name(name);
+        if (slot == nullptr || slot->read_cb == nullptr || slot->ctx == nullptr)
         {
             return -22;
         }
-        return g_chardev_write_cb(g_chardev_ctx, kbuf, len, pos);
+        return slot->read_cb(slot->ctx, kbuf, len, pos);
+    }
+
+    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf, size_t len,
+                                                      std::int64_t* pos)
+    {
+        MockCharDevSlot* slot = find_slot_by_name(name);
+        if (slot == nullptr || slot->write_cb == nullptr || slot->ctx == nullptr)
+        {
+            return -22;
+        }
+        return slot->write_cb(slot->ctx, kbuf, len, pos);
     }
 }
+
+namespace
+{
+void refresh_registration_state()
+{
+    g_mock_chardev_registered_count = static_cast<int>(g_chardev_slot_count);
+    g_mock_chardev_registered = static_cast<int>(g_chardev_slot_count > 0U);
+}
+} // namespace
