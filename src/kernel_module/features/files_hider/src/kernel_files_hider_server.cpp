@@ -19,6 +19,25 @@ constexpr size_t k_u64_digits_max = 20U;
 constexpr std::uint64_t k_decimal_base = 10U;
 static_assert(k_u64_digits_max >= k_u64_digits_required);
 
+[[nodiscard]] std::string_view view_from_offset(std::string_view text, size_t offset)
+{
+    if (offset >= text.size())
+    {
+        return {};
+    }
+    text.remove_prefix(offset);
+    return text;
+}
+
+[[nodiscard]] std::string_view view_with_max_len(std::string_view text, size_t max_len)
+{
+    if (text.size() > max_len)
+    {
+        text.remove_suffix(text.size() - max_len);
+    }
+    return text;
+}
+
 } // namespace
 
 cpp_ssize_t KernelFilesHiderServer::read_kernel(void* kbuf, size_t len, const std::int64_t* pos)
@@ -79,7 +98,7 @@ void KernelFilesHiderServer::handle_command(std::string_view command)
             set_response("Invalid Command");
             return;
         }
-        add_hidden_pattern(command.substr(1U));
+        add_hidden_pattern(view_from_offset(command, 1U));
         return;
     }
     if (command.front() == '-')
@@ -89,7 +108,7 @@ void KernelFilesHiderServer::handle_command(std::string_view command)
             set_response("Invalid Command");
             return;
         }
-        remove_hidden_pattern(command.substr(1U));
+        remove_hidden_pattern(view_from_offset(command, 1U));
         return;
     }
     if (command == k_list_command)
@@ -234,7 +253,7 @@ std::string_view KernelFilesHiderServer::trim_command(std::string_view command)
 
 std::string_view KernelFilesHiderServer::canonical_pattern(std::string_view pattern)
 {
-    return pattern.substr(0U, k_max_pattern_len);
+    return view_with_max_len(pattern, k_max_pattern_len);
 }
 
 size_t KernelFilesHiderServer::bounded_pattern_len(const HiddenPatternStats& item)
@@ -294,7 +313,7 @@ bool KernelFilesHiderServer::append_to_response(std::string_view text)
     }
     if (_response_len + text.size() > _response_buf.size())
     {
-        text = text.substr(0U, _response_buf.size() - _response_len);
+        text = view_with_max_len(text, _response_buf.size() - _response_len);
     }
     if (text.empty())
     {
