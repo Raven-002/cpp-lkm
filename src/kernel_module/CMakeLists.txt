@@ -1,5 +1,5 @@
-add_subdirectory(core/chardev)
-add_subdirectory(features/echo)
+add_subdirectory(core)
+add_subdirectory(features)
 
 add_library(kernel_module STATIC src/kernel_module.cpp)
 target_sources(
