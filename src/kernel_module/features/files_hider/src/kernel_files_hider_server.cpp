@@ -37,18 +37,37 @@ KernelFilesHiderServer::KernelFilesHiderServer() : _backend(), _manager(_backend
 
 cpp_ssize_t KernelFilesHiderServer::read_kernel(void* kbuf, size_t len, const std::int64_t* pos)
 {
-    (void)pos;
     if (len == 0)
     {
         return 0;
     }
 
-    if (kbuf == nullptr)
+    if (kbuf == nullptr || pos == nullptr)
     {
         return 0;
     }
-    const size_t copy_len = _response_len < len ? _response_len : len;
-    std::memcpy(kbuf, _response_buf.data(), copy_len);
+
+    const std::int64_t raw_offset = *pos;
+    if (raw_offset < 0)
+    {
+        return 0;
+    }
+
+    const auto offset = static_cast<size_t>(raw_offset);
+    if (offset >= _response_len)
+    {
+        return 0;
+    }
+
+    const size_t remaining = _response_len - offset;
+    const size_t copy_len = remaining < len ? remaining : len;
+    const void* src = std::next(_response_buf.data(), static_cast<std::ptrdiff_t>(offset));
+    std::memcpy(kbuf, src, copy_len);
+
+    // The bridge passes a mutable file offset, but this interface exposes it as const.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+    auto* mutable_pos = const_cast<std::int64_t*>(pos);
+    *mutable_pos += static_cast<std::int64_t>(copy_len);
     return static_cast<cpp_ssize_t>(copy_len);
 }
 

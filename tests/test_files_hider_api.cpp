@@ -61,11 +61,64 @@ static void test_stats_patterns()
     assert(response == "@{foo_.* matches=0 misses=0}@");
 }
 
+static void test_read_reaches_eof_on_same_fd()
+{
+    KernelFilesHiderServer server;
+    std::array<char, 512> buffer{};
+
+    std::int64_t write_pos = 0;
+    const std::string_view command{"+single_read"};
+    const cpp_ssize_t nwritten = server.write_kernel(command.data(), command.size(), &write_pos);
+    assert(static_cast<size_t>(nwritten) == command.size());
+
+    std::int64_t read_pos = 0;
+    buffer.fill('\0');
+    const cpp_ssize_t nread_first = server.read_kernel(buffer.data(), buffer.size(), &read_pos);
+    assert(nread_first > 0);
+    const auto response = std::string_view{buffer.data(), static_cast<size_t>(nread_first)};
+    assert(response == "@{Added}@");
+
+    buffer.fill('\0');
+    const cpp_ssize_t nread_second = server.read_kernel(buffer.data(), buffer.size(), &read_pos);
+    assert(nread_second == 0);
+}
+
+static void test_read_restarts_for_new_fd_position()
+{
+    KernelFilesHiderServer server;
+    std::array<char, 512> buffer{};
+
+    std::int64_t write_pos = 0;
+    const std::string_view command{"+fd_reset"};
+    const cpp_ssize_t nwritten = server.write_kernel(command.data(), command.size(), &write_pos);
+    assert(static_cast<size_t>(nwritten) == command.size());
+
+    std::int64_t first_fd_pos = 0;
+    buffer.fill('\0');
+    const cpp_ssize_t nread_first = server.read_kernel(buffer.data(), buffer.size(), &first_fd_pos);
+    assert(nread_first > 0);
+
+    buffer.fill('\0');
+    const cpp_ssize_t nread_first_eof =
+        server.read_kernel(buffer.data(), buffer.size(), &first_fd_pos);
+    assert(nread_first_eof == 0);
+
+    std::int64_t second_fd_pos = 0;
+    buffer.fill('\0');
+    const cpp_ssize_t nread_second_fd =
+        server.read_kernel(buffer.data(), buffer.size(), &second_fd_pos);
+    assert(nread_second_fd == nread_first);
+    const auto response = std::string_view{buffer.data(), static_cast<size_t>(nread_second_fd)};
+    assert(response == "@{Added}@");
+}
+
 extern "C" int main()
 {
     test_add_response_framing();
     test_remove_missing_pattern();
     test_list_patterns();
     test_stats_patterns();
+    test_read_reaches_eof_on_same_fd();
+    test_read_restarts_for_new_fd_position();
     return 0;
 }
