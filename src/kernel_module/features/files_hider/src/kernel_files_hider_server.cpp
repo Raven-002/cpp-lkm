@@ -8,18 +8,16 @@
 #include <limits>
 #include <string_view>
 
-namespace
-{
-constexpr std::string_view k_list_command{"@list"};
-constexpr std::string_view k_stats_command{"@stats"};
-constexpr std::string_view k_matches_label{" matches="};
-constexpr std::string_view k_misses_label{" misses="};
-constexpr size_t k_u64_digits_required = 20U;
-constexpr size_t k_u64_digits_max = 20U;
-constexpr std::uint64_t k_decimal_base = 10U;
+static constexpr std::string_view k_list_command{"@list"};
+static constexpr std::string_view k_stats_command{"@stats"};
+static constexpr std::string_view k_matches_label{" matches="};
+static constexpr std::string_view k_misses_label{" misses="};
+static constexpr size_t k_u64_digits_required = 20U;
+static constexpr size_t k_u64_digits_max = 20U;
+static constexpr std::uint64_t k_decimal_base = 10U;
 static_assert(k_u64_digits_max >= k_u64_digits_required);
 
-[[nodiscard]] std::string_view view_from_offset(std::string_view text, size_t offset)
+[[nodiscard]] static std::string_view view_from_offset(std::string_view text, size_t offset)
 {
     if (offset >= text.size())
     {
@@ -29,7 +27,7 @@ static_assert(k_u64_digits_max >= k_u64_digits_required);
     return text;
 }
 
-[[nodiscard]] std::string_view view_with_max_len(std::string_view text, size_t max_len)
+[[nodiscard]] static std::string_view view_with_max_len(std::string_view text, size_t max_len)
 {
     if (text.size() > max_len)
     {
@@ -37,9 +35,6 @@ static_assert(k_u64_digits_max >= k_u64_digits_required);
     }
     return text;
 }
-
-} // namespace
-
 cpp_ssize_t KernelFilesHiderServer::read_kernel(void* kbuf, size_t len, const std::int64_t* pos)
 {
     (void)pos;
