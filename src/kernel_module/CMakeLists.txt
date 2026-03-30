@@ -3,9 +3,9 @@ add_subdirectory(features)
 
 add_library(kernel_module STATIC src/kernel_module.cpp)
 target_sources(
-    kernel_module PRIVATE $<TARGET_OBJECTS:kernel_module_chardev>
-                          $<TARGET_OBJECTS:kernel_module_echo>
-                          $<TARGET_OBJECTS:kernel_module_files_hider>
+    kernel_module
+    PRIVATE $<TARGET_OBJECTS:kernel_module_chardev> $<TARGET_OBJECTS:kernel_module_echo>
+            $<TARGET_OBJECTS:kernel_module_files_hider>
 )
 
 target_sources(

@@ -26,7 +26,8 @@ extern "C"
 
 UserspaceDevice::UserspaceDevice(IUserspaceDeviceHandler& handler, const char* device_name)
     : _handler(&handler), _device_name(device_name)
-{}
+{
+}
 
 cpp_ssize_t UserspaceDevice::read_kernel(void* kbuf, size_t len, const std::int64_t* pos)
 {
@@ -40,9 +41,8 @@ cpp_ssize_t UserspaceDevice::write_kernel(const void* kbuf, size_t len, const st
 
 Result<void> UserspaceDevice::init()
 {
-    const int err = cpp_userspace_chardev_register(_device_name, 0666U, this,
-                                                   &userspace_read_trampoline,
-                                                   &userspace_write_trampoline);
+    const int err = cpp_userspace_chardev_register(
+        _device_name, 0666U, this, &userspace_read_trampoline, &userspace_write_trampoline);
     if (err != 0)
     {
         _registered = false;

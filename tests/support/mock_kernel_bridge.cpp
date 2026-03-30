@@ -266,8 +266,8 @@ extern "C"
 
     cpp_ssize_t cpp_mock_chardev_simulate_read_named(const char* name, void* kbuf, size_t len,
                                                      std::int64_t* pos);
-    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf, size_t len,
-                                                      std::int64_t* pos);
+    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf,
+                                                      size_t len, std::int64_t* pos);
 
     cpp_ssize_t cpp_mock_chardev_simulate_read(void* kbuf, size_t len, std::int64_t* pos)
     {
@@ -290,8 +290,8 @@ extern "C"
         return slot->read_cb(slot->ctx, kbuf, len, pos);
     }
 
-    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf, size_t len,
-                                                      std::int64_t* pos)
+    cpp_ssize_t cpp_mock_chardev_simulate_write_named(const char* name, const void* kbuf,
+                                                      size_t len, std::int64_t* pos)
     {
         MockCharDevSlot* slot = find_slot_by_name(name);
         if (slot == nullptr || slot->write_cb == nullptr || slot->ctx == nullptr)
