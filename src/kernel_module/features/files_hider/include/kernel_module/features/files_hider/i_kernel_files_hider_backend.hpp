@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <string_view>
 
 class IKernelFilesHiderStatsSink
 {
@@ -12,10 +12,8 @@ class IKernelFilesHiderStatsSink
     IKernelFilesHiderStatsSink& operator=(IKernelFilesHiderStatsSink&&) = default;
     virtual ~IKernelFilesHiderStatsSink() = default;
 
-    // Call when a pattern match resulted in an actual hide.
-    virtual void record_hide_applied(const char* pattern, size_t pattern_len) = 0;
-    // Call when a pattern match happened but hide was skipped (e.g. PID guard).
-    virtual void record_hide_skipped(const char* pattern, size_t pattern_len) = 0;
+    virtual void record_hide_applied(std::string_view pattern) = 0;
+    virtual void record_hide_skipped(std::string_view pattern) = 0;
 };
 
 class IKernelFilesHiderBackend
@@ -28,9 +26,6 @@ class IKernelFilesHiderBackend
     IKernelFilesHiderBackend& operator=(IKernelFilesHiderBackend&&) = default;
     virtual ~IKernelFilesHiderBackend() = default;
 
-    // Register or update a hidden pattern. Backends should keep stats_sink available
-    // in the hide-time path and report hide_applied/hide_skipped for each matched pattern.
-    virtual void hide_pattern(const char* pattern, size_t pattern_len,
-                              IKernelFilesHiderStatsSink& stats_sink) = 0;
-    virtual void unhide_pattern(const char* pattern, size_t pattern_len) = 0;
+    virtual void hide_pattern(std::string_view pattern, IKernelFilesHiderStatsSink& stats_sink) = 0;
+    virtual void unhide_pattern(std::string_view pattern) = 0;
 };

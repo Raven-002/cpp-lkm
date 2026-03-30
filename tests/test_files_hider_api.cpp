@@ -26,26 +26,24 @@ class CallbackTestingBackend final : public IKernelFilesHiderBackend
 
     explicit CallbackTestingBackend(Outcome outcome) : _outcome(outcome) {}
 
-    void hide_pattern(const char* pattern, size_t pattern_len,
-                      IKernelFilesHiderStatsSink& stats_sink) override
+    void hide_pattern(std::string_view pattern, IKernelFilesHiderStatsSink& stats_sink) override
     {
         switch (_outcome)
         {
         case Outcome::hide_applied:
-            stats_sink.record_hide_applied(pattern, pattern_len);
+            stats_sink.record_hide_applied(pattern);
             break;
         case Outcome::hide_skipped:
-            stats_sink.record_hide_skipped(pattern, pattern_len);
+            stats_sink.record_hide_skipped(pattern);
             break;
         case Outcome::none:
             break;
         }
     }
 
-    void unhide_pattern(const char* pattern, size_t pattern_len) override
+    void unhide_pattern(std::string_view pattern) override
     {
         (void)pattern;
-        (void)pattern_len;
     }
 
   private:

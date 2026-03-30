@@ -15,7 +15,7 @@ bool KernelFilesHiderManager::add_hidden_pattern(std::string_view pattern)
     {
         if (item.used && pattern_equals(item, stored_pattern))
         {
-            _backend->hide_pattern(stored_pattern.data(), stored_pattern.size(), *this);
+            _backend->hide_pattern(stored_pattern, *this);
             return true;
         }
     }
@@ -25,13 +25,13 @@ bool KernelFilesHiderManager::add_hidden_pattern(std::string_view pattern)
         if (!item.used)
         {
             set_hidden_pattern(item, stored_pattern);
-            _backend->hide_pattern(stored_pattern.data(), stored_pattern.size(), *this);
+            _backend->hide_pattern(stored_pattern, *this);
             return true;
         }
     }
 
     // Preserve existing compatibility behavior: report Added even when no slot is available.
-    _backend->hide_pattern(stored_pattern.data(), stored_pattern.size(), *this);
+    _backend->hide_pattern(stored_pattern, *this);
     return true;
 }
 
@@ -42,7 +42,7 @@ bool KernelFilesHiderManager::remove_hidden_pattern(std::string_view pattern)
     {
         if (item.used && pattern_equals(item, stored_pattern))
         {
-            _backend->unhide_pattern(stored_pattern.data(), stored_pattern.size());
+            _backend->unhide_pattern(stored_pattern);
             reset_hidden_pattern(item);
             return true;
         }
@@ -51,14 +51,9 @@ bool KernelFilesHiderManager::remove_hidden_pattern(std::string_view pattern)
     return false;
 }
 
-void KernelFilesHiderManager::record_hide_applied(const char* pattern, size_t pattern_len)
+void KernelFilesHiderManager::record_hide_applied(std::string_view pattern)
 {
-    if (pattern == nullptr)
-    {
-        return;
-    }
-
-    HiddenPatternStats* item = find_hidden_pattern({pattern, pattern_len});
+    HiddenPatternStats* item = find_hidden_pattern(pattern);
     if (item == nullptr)
     {
         return;
@@ -66,14 +61,9 @@ void KernelFilesHiderManager::record_hide_applied(const char* pattern, size_t pa
     increment_counter(item->matches);
 }
 
-void KernelFilesHiderManager::record_hide_skipped(const char* pattern, size_t pattern_len)
+void KernelFilesHiderManager::record_hide_skipped(std::string_view pattern)
 {
-    if (pattern == nullptr)
-    {
-        return;
-    }
-
-    HiddenPatternStats* item = find_hidden_pattern({pattern, pattern_len});
+    HiddenPatternStats* item = find_hidden_pattern(pattern);
     if (item == nullptr)
     {
         return;

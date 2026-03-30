@@ -26,8 +26,8 @@ class KernelFilesHiderManager final : public IKernelFilesHiderStatsSink
 
     [[nodiscard]] bool add_hidden_pattern(std::string_view pattern);
     [[nodiscard]] bool remove_hidden_pattern(std::string_view pattern);
-    void record_hide_applied(const char* pattern, size_t pattern_len) override;
-    void record_hide_skipped(const char* pattern, size_t pattern_len) override;
+    void record_hide_applied(std::string_view pattern) override;
+    void record_hide_skipped(std::string_view pattern) override;
 
     [[nodiscard]] const std::array<HiddenPatternStats, k_max_patterns>& hidden_patterns() const;
     [[nodiscard]] static size_t bounded_pattern_len(const HiddenPatternStats& item);
