@@ -7,8 +7,8 @@ execute_process(
 if(RES EQUAL 0)
     message(
         FATAL_ERROR
-            "Negative compile test failed (it compiled successfully but was expected to fail):\n${OUT}\n${ERR}"
-    )
+            "Negative compile test failed (it compiled successfully but was expected to fail):"
+            "\n${OUT}\n${ERR}")
 else()
     message(STATUS "Negative compile test passed (it failed to compile as expected)")
 endif()

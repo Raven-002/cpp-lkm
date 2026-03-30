@@ -150,7 +150,10 @@ markup:
 # -----------------------------------------------------------------------------
 lint:
   # Lint codes to silence, e.g. [C0103, C0301].
-  disabled_codes: []
+  # C0103: project CMake uses CPP_LKM_* / cmake_parse_arguments / mixed macro names;
+  # strict snake_case/UPPER rules are not worth enforcing here.
+  disabled_codes:
+    - C0103
 
   # --- Naming conventions ---------------------------------------------------
   # Functions must be snake_case.

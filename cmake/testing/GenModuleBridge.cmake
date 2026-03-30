@@ -11,6 +11,7 @@
 # MODULE_INCLUDE_DIRS <dir1> [<dir2> ...]   # include dirs for MODULE_HEADER
 # lookup )
 
+# Generate and link the host-mode module bridge object into the consumer static library.
 function(cpp_lkm_gen_host_bridge)
     set(oneValueArgs MODULE_NAME MODULE_OBJECT MODULE_HEADER KERNEL_INTERFACE TARGET)
     set(multiValueArgs MODULE_INCLUDE_DIRS)

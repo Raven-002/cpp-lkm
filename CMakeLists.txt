@@ -70,6 +70,7 @@ target_link_libraries("my_kernel_module.iface" INTERFACE kernel_api_iface)
 # ---------------------------------------------------------------------------
 add_custom_target(
     check_no_bug
+    COMMENT "Verify module sources contain no BUG() calls"
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/src -P
             ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
     VERBATIM)

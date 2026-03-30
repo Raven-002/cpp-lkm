@@ -18,8 +18,10 @@ target_sources(
               include/kernel_api/logging.h
               include/kernel_api/types.h)
 
-add_custom_target(kernel_api_sources SOURCES src/assert_kernel.c src/chardev_kernel.c
-                                             src/logging_kernel.c)
+add_custom_target(
+    kernel_api_sources
+    COMMENT "List kernel_api C sources for Kbuild (not built by CMake)"
+    SOURCES src/assert_kernel.c src/chardev_kernel.c src/logging_kernel.c)
 
 # Lint-only C target to emit compile_commands entries for kernel_api C sources.
 add_library(kernel_api_lint_objects OBJECT EXCLUDE_FROM_ALL src/assert_kernel.c

@@ -77,18 +77,15 @@ test: build
   {{UV_RUN}} ctest --preset "{{CMAKE_PRESET}}"
 
 # ------ QA: Format Checks (Read-Only) ------
-qa-format: qa-format-cpp qa-format-cmake
-
 qa-format-cpp: configure
   {{UV_RUN}} cmake --build --preset "{{CMAKE_PRESET}}" --target format-check
 
 qa-format-cmake:
   @scripts/cmake-format-check.sh
 
-# ------ QA: Lint Checks ------
-qa-lint: qa-lint-cpp qa-lint-markdown
-  - just qa-lint-cmake
+qa-format: qa-format-cpp qa-format-cmake
 
+# ------ QA: Lint Checks ------
 qa-lint-cpp: configure
   #!/usr/bin/env bash
   set -euo pipefail
@@ -109,6 +106,9 @@ qa-lint-markdown:
 # CMake lint is optional (script skips if cmake-lint is unavailable).
 qa-lint-cmake:
   @scripts/cmake-lint.sh
+
+qa-lint: qa-lint-cpp qa-lint-markdown qa-lint-cmake
+
 
 # ------ QA: Run All Checks ------
 qa: qa-format qa-lint

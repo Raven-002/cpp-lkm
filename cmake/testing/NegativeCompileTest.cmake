@@ -7,6 +7,8 @@
 # Collect flags from the interface target into string variables usable in add_custom_target
 # commands. This runs at configure time; genexes that need build-time evaluation are handled via
 # file(GENERATE) where needed.
+
+# Merge my_kernel_module.iface INTERFACE flags into a single CXX command-line string.
 function(_cpp_lkm_collect_neg_flags out_flags_var)
     get_target_property(_opts my_kernel_module.iface INTERFACE_COMPILE_OPTIONS)
     get_target_property(_incs my_kernel_module.iface INTERFACE_INCLUDE_DIRECTORIES)
@@ -36,10 +38,12 @@ function(_cpp_lkm_collect_neg_flags out_flags_var)
         PARENT_SCOPE)
 endfunction()
 
+# Expect compile failure for SOURCE_FILE using the same flags as the kernel interface target.
 macro(add_negative_compile_test TARGET_NAME SOURCE_FILE)
     _cpp_lkm_collect_neg_flags(_neg_cxx_flags)
     add_custom_target(
         ${TARGET_NAME}
+        COMMENT "Negative compile test: ${SOURCE_FILE}"
         COMMAND
             ${CMAKE_COMMAND} -DCOMPILER=${CMAKE_CXX_COMPILER} "-DCXX_FLAGS=${_neg_cxx_flags}"
             -DSOURCE=${SOURCE_FILE} -P
@@ -48,10 +52,12 @@ macro(add_negative_compile_test TARGET_NAME SOURCE_FILE)
     add_dependencies(kernel_module ${TARGET_NAME})
 endmacro()
 
+# Expect link failure for SOURCE_FILE against kernel_module using kernel-interface flags.
 macro(add_negative_link_test TARGET_NAME SOURCE_FILE)
     _cpp_lkm_collect_neg_flags(_neg_cxx_flags)
     add_custom_target(
         ${TARGET_NAME}
+        COMMENT "Negative link test: ${SOURCE_FILE}"
         COMMAND
             ${CMAKE_COMMAND} -DCOMPILER=${CMAKE_CXX_COMPILER} "-DCXX_FLAGS=${_neg_cxx_flags}"
             "-DLINK_FLAGS=-Wl,--no-undefined" -DSOURCE=${SOURCE_FILE}

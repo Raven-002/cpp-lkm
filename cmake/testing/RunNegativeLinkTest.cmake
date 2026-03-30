@@ -11,9 +11,8 @@ execute_process(
     ERROR_VARIABLE ERR)
 if(RES EQUAL 0)
     message(
-        FATAL_ERROR
-            "Negative link test failed (it linked successfully but was expected to fail):\n${OUT}\n${ERR}"
-    )
+        FATAL_ERROR "Negative link test failed (it linked successfully but was expected to fail):"
+                    "\n${OUT}\n${ERR}")
 else()
     message(STATUS "Negative link test passed (it failed to link as expected)")
 endif()

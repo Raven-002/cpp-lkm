@@ -45,8 +45,10 @@ target_compile_features(cpp_lkm_runtime PUBLIC cxx_std_23)
 # consumer attaches.
 
 # Runtime C bridge symbols compiled by Kbuild for .ko targets.
-add_custom_target(cpp_lkm_runtime_kernel_api_sources SOURCES src/kernel_api/context_kernel.c
-                                                             src/kernel_api/memory_kernel.c)
+add_custom_target(
+    cpp_lkm_runtime_kernel_api_sources
+    COMMENT "List kernel_api C sources for Kbuild (not built by CMake)"
+    SOURCES src/kernel_api/context_kernel.c src/kernel_api/memory_kernel.c)
 
 # ---------------------------------------------------------------------------
 # Load the public API functions.
