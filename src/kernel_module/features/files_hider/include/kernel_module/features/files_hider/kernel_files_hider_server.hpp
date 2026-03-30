@@ -19,6 +19,8 @@ class KernelFilesHiderServer final : public IUserspaceDeviceHandler
     static constexpr size_t k_max_pattern_len = 127;
     static constexpr size_t k_max_response_len = 512;
     static constexpr size_t k_max_command_len = 256;
+    static_assert(k_max_pattern_len > 0U);
+    static_assert(k_max_response_len >= 4U);
 
     struct HiddenPatternStats
     {
@@ -37,8 +39,13 @@ class KernelFilesHiderServer final : public IUserspaceDeviceHandler
     void set_response(std::string_view content);
 
     [[nodiscard]] static std::string_view trim_command(std::string_view command);
+    [[nodiscard]] static std::string_view canonical_pattern(std::string_view pattern);
+    [[nodiscard]] static size_t bounded_pattern_len(const HiddenPatternStats& item);
+    [[nodiscard]] static std::string_view stored_pattern_view(const HiddenPatternStats& item);
     [[nodiscard]] static bool pattern_equals(const HiddenPatternStats& item,
                                              std::string_view pattern);
+    static void reset_hidden_pattern(HiddenPatternStats& item);
+    static void set_hidden_pattern(HiddenPatternStats& item, std::string_view pattern);
     [[nodiscard]] bool append_to_response(char character);
     [[nodiscard]] bool append_to_response(std::string_view text);
     [[nodiscard]] bool append_u64_to_response(std::uint64_t value);

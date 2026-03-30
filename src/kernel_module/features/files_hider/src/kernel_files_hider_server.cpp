@@ -14,8 +14,10 @@ constexpr std::string_view k_list_command{"@list"};
 constexpr std::string_view k_stats_command{"@stats"};
 constexpr std::string_view k_matches_label{" matches="};
 constexpr std::string_view k_misses_label{" misses="};
+constexpr size_t k_u64_digits_required = 20U;
 constexpr size_t k_u64_digits_max = 20U;
 constexpr std::uint64_t k_decimal_base = 10U;
+static_assert(k_u64_digits_max >= k_u64_digits_required);
 
 } // namespace
 
@@ -27,8 +29,12 @@ cpp_ssize_t KernelFilesHiderServer::read_kernel(void* kbuf, size_t len, const st
         return 0;
     }
 
+    if (kbuf == nullptr)
+    {
+        return 0;
+    }
     const size_t copy_len = _response_len < len ? _response_len : len;
-    memcpy(kbuf, _response_buf.data(), copy_len);
+    std::memcpy(kbuf, _response_buf.data(), copy_len);
     return static_cast<cpp_ssize_t>(copy_len);
 }
 
@@ -46,9 +52,14 @@ cpp_ssize_t KernelFilesHiderServer::write_kernel(const void* kbuf, size_t len,
         return 0;
     }
 
+    if (kbuf == nullptr)
+    {
+        set_response("Invalid Command");
+        return 0;
+    }
     std::array<char, k_max_command_len + 1U> command_buf{};
     const size_t copy_len = len < k_max_command_len ? len : k_max_command_len;
-    memcpy(command_buf.data(), kbuf, copy_len);
+    std::memcpy(command_buf.data(), kbuf, copy_len);
     const std::string_view command = trim_command({command_buf.data(), copy_len});
     handle_command(command);
     return static_cast<cpp_ssize_t>(len);
@@ -97,7 +108,7 @@ void KernelFilesHiderServer::handle_command(std::string_view command)
 
 void KernelFilesHiderServer::add_hidden_pattern(std::string_view pattern)
 {
-    const std::string_view stored_pattern = pattern.substr(0U, k_max_pattern_len);
+    const std::string_view stored_pattern = canonical_pattern(pattern);
     for (const HiddenPatternStats& item : _hidden_patterns)
     {
         if (item.used && pattern_equals(item, stored_pattern))
@@ -112,34 +123,27 @@ void KernelFilesHiderServer::add_hidden_pattern(std::string_view pattern)
     {
         if (!item.used)
         {
-            item.used = true;
-            item.pattern_len = stored_pattern.size();
-            std::memset(item.pattern.data(), 0, item.pattern.size());
-            std::memcpy(item.pattern.data(), stored_pattern.data(), stored_pattern.size());
-            item.matches = 0;
-            item.misses = 0;
+            set_hidden_pattern(item, stored_pattern);
             hide_pattern_hook(stored_pattern.data(), stored_pattern.size());
             set_response("Added");
             return;
         }
     }
 
+    // Preserve existing compatibility behavior: report Added even when no slot is available.
     hide_pattern_hook(stored_pattern.data(), stored_pattern.size());
     set_response("Added");
 }
 
 void KernelFilesHiderServer::remove_hidden_pattern(std::string_view pattern)
 {
+    const std::string_view stored_pattern = canonical_pattern(pattern);
     for (HiddenPatternStats& item : _hidden_patterns)
     {
-        if (item.used && pattern_equals(item, pattern))
+        if (item.used && pattern_equals(item, stored_pattern))
         {
-            unhide_pattern_hook(pattern.data(), pattern.size());
-            item.used = false;
-            item.pattern_len = 0;
-            item.matches = 0;
-            item.misses = 0;
-            std::memset(item.pattern.data(), 0, item.pattern.size());
+            unhide_pattern_hook(stored_pattern.data(), stored_pattern.size());
+            reset_hidden_pattern(item);
             set_response("Removed");
             return;
         }
@@ -162,7 +166,7 @@ void KernelFilesHiderServer::list_hidden_patterns()
         {
             (void)append_to_response('\n');
         }
-        (void)append_to_response({item.pattern.data(), item.pattern_len});
+        (void)append_to_response(stored_pattern_view(item));
         ++listed;
     }
 
@@ -189,7 +193,7 @@ void KernelFilesHiderServer::list_hidden_patterns_with_stats()
         {
             (void)append_to_response('\n');
         }
-        (void)append_to_response({item.pattern.data(), item.pattern_len});
+        (void)append_to_response(stored_pattern_view(item));
         (void)append_to_response(k_matches_label);
         (void)append_u64_to_response(item.matches);
         (void)append_to_response(k_misses_label);
@@ -228,25 +232,66 @@ std::string_view KernelFilesHiderServer::trim_command(std::string_view command)
     return command;
 }
 
+std::string_view KernelFilesHiderServer::canonical_pattern(std::string_view pattern)
+{
+    return pattern.substr(0U, k_max_pattern_len);
+}
+
+size_t KernelFilesHiderServer::bounded_pattern_len(const HiddenPatternStats& item)
+{
+    return item.pattern_len < k_max_pattern_len ? item.pattern_len : k_max_pattern_len;
+}
+
+std::string_view KernelFilesHiderServer::stored_pattern_view(const HiddenPatternStats& item)
+{
+    return {item.pattern.data(), bounded_pattern_len(item)};
+}
+
 bool KernelFilesHiderServer::pattern_equals(const HiddenPatternStats& item,
                                             std::string_view pattern)
 {
-    return std::string_view{item.pattern.data(), item.pattern_len} == pattern;
+    return stored_pattern_view(item) == pattern;
+}
+
+void KernelFilesHiderServer::reset_hidden_pattern(HiddenPatternStats& item)
+{
+    std::memset(item.pattern.data(), 0, item.pattern.size());
+    item.pattern_len = 0;
+    item.matches = 0;
+    item.misses = 0;
+    item.used = false;
+}
+
+void KernelFilesHiderServer::set_hidden_pattern(HiddenPatternStats& item, std::string_view pattern)
+{
+    const std::string_view bounded = canonical_pattern(pattern);
+    reset_hidden_pattern(item);
+    std::memcpy(item.pattern.data(), bounded.data(), bounded.size());
+    item.pattern_len = bounded.size();
+    item.used = true;
 }
 
 bool KernelFilesHiderServer::append_to_response(char character)
 {
+    if (_response_len > _response_buf.size())
+    {
+        return false;
+    }
     if (_response_len >= _response_buf.size())
     {
         return false;
     }
-    _response_buf.at(_response_len) = character;
+    *std::next(_response_buf.data(), static_cast<std::ptrdiff_t>(_response_len)) = character;
     ++_response_len;
     return true;
 }
 
 bool KernelFilesHiderServer::append_to_response(std::string_view text)
 {
+    if (_response_len > _response_buf.size())
+    {
+        return false;
+    }
     if (_response_len + text.size() > _response_buf.size())
     {
         text = text.substr(0U, _response_buf.size() - _response_len);
@@ -267,14 +312,15 @@ bool KernelFilesHiderServer::append_u64_to_response(std::uint64_t value)
     size_t digits_len = 0;
     if (value == 0U)
     {
-        digits.at(0U) = '0';
+        *digits.begin() = '0';
         digits_len = 1U;
     }
     else
     {
         while (value > 0U && digits_len < digits.size())
         {
-            digits.at(digits_len) = static_cast<char>('0' + (value % k_decimal_base));
+            *std::next(digits.data(), static_cast<std::ptrdiff_t>(digits_len)) =
+                static_cast<char>('0' + (value % k_decimal_base));
             value /= k_decimal_base;
             ++digits_len;
         }
@@ -283,7 +329,7 @@ bool KernelFilesHiderServer::append_u64_to_response(std::uint64_t value)
     while (digits_len > 0U)
     {
         --digits_len;
-        if (!append_to_response(digits.at(digits_len)))
+        if (!append_to_response(*std::next(digits.data(), static_cast<std::ptrdiff_t>(digits_len))))
         {
             return false;
         }
@@ -294,7 +340,8 @@ bool KernelFilesHiderServer::append_u64_to_response(std::uint64_t value)
 void KernelFilesHiderServer::wrap_current_content_as_response()
 {
     std::array<char, k_max_response_len> content{};
-    const size_t content_len = _response_len;
+    const size_t content_len =
+        _response_len < _response_buf.size() ? _response_len : _response_buf.size();
     if (content_len > 0U)
     {
         std::memcpy(content.data(), _response_buf.data(), content_len);
