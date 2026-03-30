@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 class KernelFilesHiderServer final : public IUserspaceDeviceHandler
 {
@@ -28,19 +29,18 @@ class KernelFilesHiderServer final : public IUserspaceDeviceHandler
         bool used = false;
     };
 
-    void handle_command(const char* command, size_t command_len);
-    void add_hidden_pattern(const char* pattern, size_t pattern_len);
-    void remove_hidden_pattern(const char* pattern, size_t pattern_len);
+    void handle_command(std::string_view command);
+    void add_hidden_pattern(std::string_view pattern);
+    void remove_hidden_pattern(std::string_view pattern);
     void list_hidden_patterns();
     void list_hidden_patterns_with_stats();
-    void set_response(const char* content, size_t content_len);
-    void set_response_literal(const char* content);
+    void set_response(std::string_view content);
 
-    [[nodiscard]] static size_t trim_command_len(const char* command, size_t command_len);
-    [[nodiscard]] static bool pattern_equals(const HiddenPatternStats& item, const char* pattern,
-                                             size_t pattern_len);
+    [[nodiscard]] static std::string_view trim_command(std::string_view command);
+    [[nodiscard]] static bool pattern_equals(const HiddenPatternStats& item,
+                                             std::string_view pattern);
     [[nodiscard]] bool append_to_response(char character);
-    [[nodiscard]] bool append_to_response(const char* text, size_t text_len);
+    [[nodiscard]] bool append_to_response(std::string_view text);
     [[nodiscard]] bool append_u64_to_response(std::uint64_t value);
     void wrap_current_content_as_response();
 
