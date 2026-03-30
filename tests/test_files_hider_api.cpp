@@ -1,5 +1,7 @@
 // tests/test_files_hider_api.cpp
 // Host tests for files_hider command parsing and response framing.
+#include "kernel_module/features/files_hider/i_kernel_files_hider_backend.hpp"
+#include "kernel_module/features/files_hider/kernel_files_hider_manager.hpp"
 #include "kernel_module/features/files_hider/kernel_files_hider_server.hpp"
 
 #include <array>
@@ -8,6 +10,61 @@
 #include <cstdint>
 #include <cstring>
 #include <string_view>
+
+class CallbackTestingBackend final : public IKernelFilesHiderBackend
+{
+  public:
+    enum class Outcome : std::uint8_t
+    {
+        hide_applied,
+        hide_skipped,
+        none
+    };
+
+    explicit CallbackTestingBackend(Outcome outcome) : _outcome(outcome) {}
+
+    void hide_pattern(const char* pattern, size_t pattern_len,
+                      IKernelFilesHiderStatsSink& stats_sink) override
+    {
+        switch (_outcome)
+        {
+        case Outcome::hide_applied:
+            stats_sink.record_hide_applied(pattern, pattern_len);
+            break;
+        case Outcome::hide_skipped:
+            stats_sink.record_hide_skipped(pattern, pattern_len);
+            break;
+        case Outcome::none:
+            break;
+        }
+    }
+
+    void unhide_pattern(const char* pattern, size_t pattern_len) override
+    {
+        (void)pattern;
+        (void)pattern_len;
+    }
+
+  private:
+    Outcome _outcome = Outcome::none;
+};
+
+[[nodiscard]] static const KernelFilesHiderManager::HiddenPatternStats*
+find_hidden_pattern(const KernelFilesHiderManager& manager, std::string_view pattern)
+{
+    for (const auto& item : manager.hidden_patterns())
+    {
+        if (!item.used)
+        {
+            continue;
+        }
+        if (KernelFilesHiderManager::stored_pattern_view(item) == pattern)
+        {
+            return &item;
+        }
+    }
+    return nullptr;
+}
 
 static std::string_view write_then_read(KernelFilesHiderServer& server, std::string_view command,
                                         std::array<char, 512>& buffer)
@@ -59,6 +116,34 @@ static void test_stats_patterns()
     (void)write_then_read(server, "+foo_.*", buffer);
     const auto response = write_then_read(server, "@stats", buffer);
     assert(response == "@{foo_.* matches=0 misses=0}@");
+}
+
+static void test_manager_records_hide_applied_callback()
+{
+    CallbackTestingBackend backend{CallbackTestingBackend::Outcome::hide_applied};
+    KernelFilesHiderManager manager{backend};
+
+    const bool added = manager.add_hidden_pattern("foo_.*");
+    assert(added);
+
+    const auto* item = find_hidden_pattern(manager, "foo_.*");
+    assert(item != nullptr);
+    assert(item->matches == 1U);
+    assert(item->misses == 0U);
+}
+
+static void test_manager_records_hide_skipped_callback()
+{
+    CallbackTestingBackend backend{CallbackTestingBackend::Outcome::hide_skipped};
+    KernelFilesHiderManager manager{backend};
+
+    const bool added = manager.add_hidden_pattern("foo_.*");
+    assert(added);
+
+    const auto* item = find_hidden_pattern(manager, "foo_.*");
+    assert(item != nullptr);
+    assert(item->matches == 0U);
+    assert(item->misses == 1U);
 }
 
 static void test_read_reaches_eof_on_same_fd()
@@ -118,6 +203,8 @@ extern "C" int main()
     test_remove_missing_pattern();
     test_list_patterns();
     test_stats_patterns();
+    test_manager_records_hide_applied_callback();
+    test_manager_records_hide_skipped_callback();
     test_read_reaches_eof_on_same_fd();
     test_read_restarts_for_new_fd_position();
     return 0;

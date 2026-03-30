@@ -5,7 +5,10 @@
 class DummyKernelFilesHiderBackend final : public IKernelFilesHiderBackend
 {
   public:
-    void hide_pattern(const char* pattern, size_t pattern_len) override;
+    void hide_pattern(const char* pattern, size_t pattern_len,
+                      IKernelFilesHiderStatsSink& stats_sink) override;
     void unhide_pattern(const char* pattern, size_t pattern_len) override;
-    void update_statistics() override;
+
+  private:
+    IKernelFilesHiderStatsSink* _stats_sink = nullptr;
 };

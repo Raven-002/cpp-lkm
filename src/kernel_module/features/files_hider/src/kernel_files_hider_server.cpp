@@ -169,7 +169,6 @@ void KernelFilesHiderServer::list_hidden_patterns()
 
 void KernelFilesHiderServer::list_hidden_patterns_with_stats()
 {
-    _manager.update_statistics();
     _response_len = 0;
     size_t listed = 0;
     for (const KernelFilesHiderManager::HiddenPatternStats& item : _manager.hidden_patterns())

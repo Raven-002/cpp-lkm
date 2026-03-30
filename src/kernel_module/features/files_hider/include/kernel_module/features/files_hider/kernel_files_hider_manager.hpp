@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string_view>
 
-class KernelFilesHiderManager final
+class KernelFilesHiderManager final : public IKernelFilesHiderStatsSink
 {
   public:
     static constexpr size_t k_max_patterns = 32;
@@ -26,7 +26,8 @@ class KernelFilesHiderManager final
 
     [[nodiscard]] bool add_hidden_pattern(std::string_view pattern);
     [[nodiscard]] bool remove_hidden_pattern(std::string_view pattern);
-    void update_statistics();
+    void record_hide_applied(const char* pattern, size_t pattern_len) override;
+    void record_hide_skipped(const char* pattern, size_t pattern_len) override;
 
     [[nodiscard]] const std::array<HiddenPatternStats, k_max_patterns>& hidden_patterns() const;
     [[nodiscard]] static size_t bounded_pattern_len(const HiddenPatternStats& item);
@@ -36,6 +37,8 @@ class KernelFilesHiderManager final
     [[nodiscard]] static std::string_view canonical_pattern(std::string_view pattern);
     [[nodiscard]] static bool pattern_equals(const HiddenPatternStats& item,
                                              std::string_view pattern);
+    HiddenPatternStats* find_hidden_pattern(std::string_view pattern);
+    static void increment_counter(std::uint64_t& counter);
     static void reset_hidden_pattern(HiddenPatternStats& item);
     static void set_hidden_pattern(HiddenPatternStats& item, std::string_view pattern);
 
