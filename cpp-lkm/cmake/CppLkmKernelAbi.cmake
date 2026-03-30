@@ -19,12 +19,15 @@ function(cpp_lkm_attach_kernel_abi iface_target)
         list(
             APPEND
             _abi_flags
+            -fcf-protection=branch
             -mindirect-branch=thunk-extern
             -mindirect-branch-register
             -mfunction-return=thunk-extern
         )
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        list(APPEND _abi_flags -mretpoline-external-thunk -mfunction-return=thunk-extern)
+        list(APPEND _abi_flags -fcf-protection=branch -mretpoline-external-thunk
+             -mfunction-return=thunk-extern
+        )
     endif()
 
     target_compile_options(${iface_target} INTERFACE ${_abi_flags})
