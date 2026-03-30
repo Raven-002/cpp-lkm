@@ -11,6 +11,9 @@
 #include <cstring>
 #include <string_view>
 
+namespace
+{
+
 class CallbackTestingBackend final : public IKernelFilesHiderBackend
 {
   public:
@@ -48,6 +51,8 @@ class CallbackTestingBackend final : public IKernelFilesHiderBackend
   private:
     Outcome _outcome = Outcome::none;
 };
+
+} // namespace
 
 [[nodiscard]] static const KernelFilesHiderManager::HiddenPatternStats*
 find_hidden_pattern(const KernelFilesHiderManager& manager, std::string_view pattern)
