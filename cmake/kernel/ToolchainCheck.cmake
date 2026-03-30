@@ -10,8 +10,7 @@ elseif(BUILD_MODE STREQUAL "platform" OR BUILD_MODE STREQUAL "ci")
         message(FATAL_ERROR "Platform mode requires GCC")
     endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.5" OR CMAKE_CXX_COMPILER_VERSION
-                                                         VERSION_GREATER_EQUAL "13.0"
-    )
+                                                         VERSION_GREATER_EQUAL "13.0")
         message(FATAL_ERROR "Platform mode requires GCC 12.5.x")
     endif()
 endif()

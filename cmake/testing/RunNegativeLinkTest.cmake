@@ -8,8 +8,7 @@ execute_process(
             -lc -lgcc -o /dev/null
     RESULT_VARIABLE RES
     OUTPUT_VARIABLE OUT
-    ERROR_VARIABLE ERR
-)
+    ERROR_VARIABLE ERR)
 if(RES EQUAL 0)
     message(
         FATAL_ERROR

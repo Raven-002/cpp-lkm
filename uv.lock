@@ -82,6 +82,18 @@ wheels = [
 ]
 
 [[package]]
+name = "cmake-format"
+version = "0.6.13"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cmakelang" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5d/3e/f1a7388ce2528b69fbfce9691e5c97f1b2b2b83c25711e0627c3e8f99e58/cmake-format-0.6.13.tar.gz", hash = "sha256:1a48b779067ecca68c498691d07d5c9d3df9803a7e0c5b641128fa6efe5ae489", size = 10484, upload-time = "2020-08-19T17:15:26.286Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/40/0ca7c62dc4b9af58ca32da8e6d87ee222f5bb551c17ef22900b2f81b998e/cmake_format-0.6.13-py3-none-any.whl", hash = "sha256:ec7ed949101e5f0b7bc19317d122b83ccbc28fd766c41c93094845719667c56e", size = 19725, upload-time = "2020-08-19T17:15:24.23Z" },
+]
+
+[[package]]
 name = "cmakelang"
 version = "0.6.13"
 source = { registry = "https://pypi.org/simple" }
@@ -108,6 +120,7 @@ dev = [
     { name = "clang-format" },
     { name = "clang-tidy" },
     { name = "cmake" },
+    { name = "cmake-format" },
     { name = "cmakelang", extra = ["yaml"] },
     { name = "pre-commit" },
 ]
@@ -119,6 +132,7 @@ dev = [
     { name = "clang-format", specifier = ">=22.1.2" },
     { name = "clang-tidy", specifier = ">=22.1.0" },
     { name = "cmake", specifier = ">=4.3.0,!=4.3.1" },
+    { name = "cmake-format", specifier = ">=0.6.13" },
     { name = "cmakelang", extras = ["yaml"], specifier = ">=0.6.13" },
     { name = "pre-commit", specifier = ">=3.8.0" },
 ]

@@ -1,17 +1,59 @@
-# cmakelang: format + lint. Strict: enable all lint, disable only irrelevant.
-# https://cmake-format.readthedocs.io/
-
-# Preserve casing so CMake keywords (VERSION, LANGUAGES, CACHE, INTERFACE, etc.) stay valid.
 format:
+  # Line width
   line_width: 100
+  
+  # Tab size
   tab_size: 4
-  command_case: unchanged
-  keyword_case: unchanged
-  enable_sort: true
-  dangle_parens: true
+  use_tab: false
+  
+  # Separate control and function names with a space
+  separate_ctrl_name_with_space: false
+  separate_fn_name_with_space: false
+  
+  # Uppercase commands (Matches official CMake documentation style)
+  keyword_case: upper
+
+  # Wrap arguments
+  max_pargs_h_wrapped: 3
+  max_subgroups_h_wrapped: 2
+  wrap_arguments: true
+
+# Parse comments
+parse:
+  emit_reformat_comments: true
+  comment_indent: 2
+  bullet_char: '*'
+  enum_char: '.'
+
+commands:
+  target_link_libraries:
+    argument_wrap: always
+    group_wrap: 3
+  target_include_directories:
+    argument_wrap: always
+    group_wrap: 3
+  target_compile_definitions:
+    argument_wrap: always
+    group_wrap: 3
+  set:
+    argument_wrap: auto
 
 lint:
-  # Disable convention checks that conflict with common CMake style (UPPER_CASE, line length, COMMENT/docstring).
-  disabled_codes: [C0103, C0111, C0113, C0301]
-  min_statement_spacing: 1
-  max_statement_spacing: 2
+  disabled_codes:
+    - C0113  # Missing newline at end of file (formatter handles this)
+    - C0301  # Line too long (formatter handles this)
+    - C0304  # Missing comment header (too noisy for most projects)
+  
+  # Function names that take variadic arguments (to avoid false positives)
+  function_pattern:
+    - target_.*
+    - set_.*
+  
+  # Treat specific variables as global (to avoid 'unused variable' warnings)
+  global_var_pattern:
+    - CMAKE_.*
+    - PROJECT_.*
+    - .*_DIR
+    - .*_PATH
+
+  fail_on_warning: true

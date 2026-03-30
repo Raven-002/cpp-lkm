@@ -32,8 +32,7 @@ function(_cpp_lkm_collect_neg_flags out_flags_var)
 
     set(${out_flags_var}
         "${_flags}"
-        PARENT_SCOPE
-    )
+        PARENT_SCOPE)
 endfunction()
 
 macro(add_negative_compile_test TARGET_NAME SOURCE_FILE)
@@ -44,8 +43,7 @@ macro(add_negative_compile_test TARGET_NAME SOURCE_FILE)
             ${CMAKE_COMMAND} -DCOMPILER=${CMAKE_CXX_COMPILER} "-DCXX_FLAGS=${_neg_cxx_flags}"
             -DSOURCE=${SOURCE_FILE} -P
             ${CMAKE_SOURCE_DIR}/cmake/testing/RunNegativeCompileTest.cmake
-        DEPENDS ${SOURCE_FILE}
-    )
+        DEPENDS ${SOURCE_FILE})
     add_dependencies(kernel_module ${TARGET_NAME})
 endmacro()
 
@@ -58,6 +56,5 @@ macro(add_negative_link_test TARGET_NAME SOURCE_FILE)
             "-DLINK_FLAGS=-Wl,--no-undefined" -DSOURCE=${SOURCE_FILE}
             "-DLIB_TO_LINK=$<TARGET_FILE:kernel_module>" -P
             ${CMAKE_SOURCE_DIR}/cmake/testing/RunNegativeLinkTest.cmake
-        DEPENDS ${SOURCE_FILE} kernel_module
-    )
+        DEPENDS ${SOURCE_FILE} kernel_module)
 endmacro()

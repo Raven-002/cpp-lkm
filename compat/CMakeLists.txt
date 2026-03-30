@@ -10,5 +10,4 @@ target_sources(
               "${CMAKE_CURRENT_SOURCE_DIR}/include"
               FILES
               include/compat/new_shim.hpp
-              include/compat/gsl_owner.hpp
-)
+              include/compat/gsl_owner.hpp)

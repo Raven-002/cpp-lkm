@@ -6,8 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(BUILD_MODE
     "host"
-    CACHE STRING "Build mode: host, platform, ci"
-)
+    CACHE STRING "Build mode: host, platform, ci")
 # Default OFF so host test builds do not require kernel-devel. Pass -DBUILD_KO=ON (e.g. just ko) to
 # build the real .ko via Kbuild.
 option(BUILD_KO "Build the real .ko via Kbuild" OFF)
@@ -39,26 +38,22 @@ cpp_lkm_create_kernel_interface(
     MODULE_API_HEADER
     "kernel_api/kernel_api.h"
     ABI_MODE
-    "${_abi_mode}"
-)
+    "${_abi_mode}")
 
 # C-only interface for linting kernel_api bridge sources with kernel-like flags/includes.
 add_library(my_kernel_module.c_iface INTERFACE)
 cpp_lkm_get_c_flags(_my_kernel_module_c_flags)
-target_compile_options(
-    "my_kernel_module.c_iface" INTERFACE $<$<COMPILE_LANGUAGE:C>:${_my_kernel_module_c_flags}>
-)
+target_compile_options("my_kernel_module.c_iface"
+                       INTERFACE $<$<COMPILE_LANGUAGE:C>:${_my_kernel_module_c_flags}>)
 target_compile_definitions("my_kernel_module.c_iface" INTERFACE __KERNEL__ MODULE)
 cpp_lkm_resolve_kdir(_my_kernel_module_kdir "")
-cpp_lkm_attach_kernel_headers(
-    "my_kernel_module.c_iface" KDIR "${_my_kernel_module_kdir}" MODULE_NAME "my_kernel_module"
-)
+cpp_lkm_attach_kernel_headers("my_kernel_module.c_iface" KDIR "${_my_kernel_module_kdir}"
+                              MODULE_NAME "my_kernel_module")
 target_compile_options(
     "my_kernel_module.c_iface"
     INTERFACE
         $<$<COMPILE_LANGUAGE:C>:-include${_my_kernel_module_kdir}/include/generated/autoconf.h>
-        $<$<COMPILE_LANGUAGE:C>:-include${_my_kernel_module_kdir}/include/linux/kconfig.h>
-)
+        $<$<COMPILE_LANGUAGE:C>:-include${_my_kernel_module_kdir}/include/linux/kconfig.h>)
 if(BUILD_KO)
     cpp_lkm_attach_kernel_abi("my_kernel_module.c_iface")
 endif()
@@ -77,8 +72,7 @@ add_custom_target(
     check_no_bug
     COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/src -P
             ${CMAKE_SOURCE_DIR}/cmake/testing/CheckNoBug.cmake
-    VERBATIM
-)
+    VERBATIM)
 add_dependencies(kernel_module check_no_bug)
 
 # ---------------------------------------------------------------------------
@@ -113,8 +107,7 @@ if(BUILD_KO)
         "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/features/files_hider/include"
-        ALL
-    )
+        ALL)
 else()
     cpp_lkm_gen_host_bridge(
         MODULE_NAME
@@ -131,8 +124,7 @@ else()
         "${CMAKE_SOURCE_DIR}/src/kernel_module/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/core/chardev/include"
         "${CMAKE_SOURCE_DIR}/src/kernel_module/features/echo/include"
-        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/files_hider/include"
-    )
+        "${CMAKE_SOURCE_DIR}/src/kernel_module/features/files_hider/include")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -143,8 +135,7 @@ include(cmake/testing/NegativeCompileTest.cmake)
 
 if(NOT BUILD_KO)
     set(TEST_SRCS tests/test_init.cpp tests/test_allocator.cpp tests/test_compat.cpp
-                  tests/test_userspace_device.cpp tests/test_files_hider_api.cpp
-    )
+                  tests/test_userspace_device.cpp tests/test_files_hider_api.cpp)
     # mock_kernel_bridge.cpp provides host-mode kernel API stubs.
     set(TEST_MOCK_SRC tests/support/mock_kernel_bridge.cpp)
 
@@ -159,14 +150,12 @@ if(NOT BUILD_KO)
 
     add_negative_link_test(test_no_raw_new ${CMAKE_SOURCE_DIR}/tests/test_negative_new.cpp)
     add_test(NAME test_no_raw_new_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
-                                               --target test_no_raw_new
-    )
+                                               --target test_no_raw_new)
 endif()
 
 add_negative_compile_test(test_nodiscard ${CMAKE_SOURCE_DIR}/tests/test_nodiscard.cpp)
 add_test(NAME test_nodiscard_eval COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target
-                                          test_nodiscard
-)
+                                          test_nodiscard)
 
 # ---------------------------------------------------------------------------
 # Format / lint convenience targets.

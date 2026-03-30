@@ -3,8 +3,7 @@ execute_process(
     COMMAND ${COMPILER} ${CXX_FLAGS_LIST} -c ${SOURCE} -o /dev/null
     RESULT_VARIABLE RES
     OUTPUT_VARIABLE OUT
-    ERROR_VARIABLE ERR
-)
+    ERROR_VARIABLE ERR)
 if(RES EQUAL 0)
     message(
         FATAL_ERROR

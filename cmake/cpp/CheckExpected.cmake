@@ -9,13 +9,11 @@ check_cxx_source_compiles(
     #endif
     int main() { std::expected<int,int> e{1}; return e.value(); }
 "
-    HAS_NATIVE_EXPECTED
-)
+    HAS_NATIVE_EXPECTED)
 
 if(HAS_NATIVE_EXPECTED)
     message(STATUS "std::expected: native")
 else()
     message(FATAL_ERROR "Native std::expected is required. Your toolchain/stdlib does not provide "
-                        "__cpp_lib_expected >= 202202L."
-    )
+                        "__cpp_lib_expected >= 202202L.")
 endif()
