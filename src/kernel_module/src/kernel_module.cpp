@@ -3,7 +3,7 @@
 #include "kernel_api/kernel_api.h"
 
 KernelModule::KernelModule()
-    : _files_hider_server(), _echo_userspace(_echo_server, "cpp_lkm"),
+    : _echo_userspace(_echo_server, "cpp_lkm"),
       _files_hider_userspace(_files_hider_server, "cpp_lkm_files_hider")
 {
     cpp_printk(CPP_KERN_INFO "[CPP] Constructed\n");
