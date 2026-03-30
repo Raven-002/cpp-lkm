@@ -34,6 +34,7 @@ struct MockCharDevSlot
 
 std::array<MockCharDevSlot, k_max_mock_chardev_slots> g_chardev_slots{};
 size_t g_chardev_slot_count = 0;
+} // namespace
 
 static void refresh_registration_state();
 
@@ -82,7 +83,6 @@ static MockCharDevSlot* find_slot_by_ctx(void* ctx)
     }
     return nullptr;
 }
-} // namespace
 
 extern "C"
 {
@@ -218,7 +218,7 @@ extern "C"
             slot.used = true;
             slot.name_len = name_len;
             std::memcpy(slot.name.data(), name, name_len);
-            slot.name[name_len] = '\0';
+            slot.name.at(name_len) = '\0';
             slot.ctx = ctx;
             slot.read_cb = read_cb;
             slot.write_cb = write_cb;
@@ -295,11 +295,8 @@ extern "C"
     }
 }
 
-namespace
-{
 static void refresh_registration_state()
 {
     g_mock_chardev_registered_count = static_cast<int>(g_chardev_slot_count);
     g_mock_chardev_registered = static_cast<int>(g_chardev_slot_count > 0U);
 }
-} // namespace

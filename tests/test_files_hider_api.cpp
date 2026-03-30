@@ -9,8 +9,6 @@
 #include <cstring>
 #include <string_view>
 
-namespace
-{
 static std::string_view write_then_read(KernelFilesHiderServer& server, std::string_view command,
                                         std::array<char, 512>& buffer)
 {
@@ -24,7 +22,6 @@ static std::string_view write_then_read(KernelFilesHiderServer& server, std::str
     assert(nread > 0);
     return std::string_view{buffer.data(), static_cast<size_t>(nread)};
 }
-} // namespace
 
 static void test_add_response_framing()
 {
